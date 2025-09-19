@@ -1,0 +1,22 @@
+智慧食材辨識與食譜推薦系統 - 啟動指令
+
+=== 後端啟動 ===
+1. 開啟命令提示字元
+2. 輸入：cd /d E:\Users\acer\Desktop\新專題\backend
+3. 輸入：python run.py
+4. 看到 "Running on http://127.0.0.1:5000" 表示成功
+
+=== 前端啟動 ===
+1. 開啟新的命令提示字元
+2. 輸入：cd /d E:\Users\acer\Desktop\新專題\frontend
+3. 輸入：flutter run -d chrome
+4. 會自動開啟瀏覽器顯示登入界面
+
+=== 測試帳戶 ===
+用戶名：testuser
+密碼：password123
+
+=== 注意事項 ===
+- 後端必須先啟動
+- 兩個命令提示字元都要保持運行
+- 如果遇到錯誤，請檢查 MySQL 服務是否運行
