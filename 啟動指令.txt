@@ -6,7 +6,7 @@
 3. 輸入：python run.py
 4. 看到 "Running on http://127.0.0.1:5000" 表示成功
 
-=== 前端啟動 ===
+=== 前端啟動 ===11
 1. 開啟新的命令提示字元
 2. 輸入：cd /d E:\Users\acer\Desktop\新專題\frontend
 3. 輸入：flutter run -d chrome
