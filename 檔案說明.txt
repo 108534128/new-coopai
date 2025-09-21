@@ -4,6 +4,8 @@
 📁 frontend/          - Flutter 前端應用程式
 📁 backend/           - Flask 後端 API 服務
 📁 database/          - 資料庫設計檔案
+📁 models/            - 資料模型目錄（預留）
+📁 docs/              - 文件目錄（預留）
 📄 README.md          - 專案總體說明
 📄 啟動指令.txt       - 如何啟動系統的步驟
 📄 檔案說明.txt       - 本檔案，說明每個檔案的作用
@@ -37,29 +39,31 @@
 
 === database/ 目錄 (資料庫) ===
 📄 schema.sql        - 資料庫結構設計檔案
+📄 init_database.py  - 資料庫初始化腳本
 
 === 各檔案詳細說明 ===
 
 【前端檔案】
 - main.dart: 應用程式主入口，設定路由和主題
-- login_screen.dart: 用戶登入界面
-- register_screen.dart: 用戶註冊界面
+- login_screen.dart: 用戶登入界面（使用帳號和密碼）
+- register_screen.dart: 用戶註冊界面（帳號、姓名、密碼）
 - home_screen.dart: 主頁面，顯示功能選單
 - profile_screen.dart: 個人資料查看和編輯
-- user.dart: 定義用戶資料結構
+- user.dart: 定義用戶資料結構（uid, account, name）
 - auth_provider.dart: 管理登入狀態和用戶資料
 - api_service.dart: 處理與後端的 API 通訊
 - custom_text_field.dart: 統一的輸入框樣式
 - loading_button.dart: 帶載入動畫的按鈕
 
 【後端檔案】
-- app.py: 包含所有 API 端點（登入、註冊、個人資料等）
+- app.py: 包含所有 API 端點（登入、註冊、個人資料等），連接到 cookpal 資料庫
 - config.py: 資料庫連接、JWT 設定等配置
 - run.py: 啟動 Flask 伺服器
 - requirements.txt: 列出所有需要的 Python 套件
 
 【資料庫檔案】
 - schema.sql: 定義資料庫表格結構
+- init_database.py: 自動建立資料庫和表格的腳本
 
 【說明檔案】
 - README.md: 專案總體介紹和快速開始指南
@@ -70,5 +74,19 @@
 1. 用戶在前端輸入帳號密碼
 2. 前端透過 api_service.dart 呼叫後端 API
 3. 後端 app.py 驗證用戶資料
-4. 後端查詢 database/ 中的資料庫
+4. 後端查詢 cookpal 資料庫中的 users 表
 5. 返回結果給前端顯示
+
+=== 資料庫配置 ===
+- 資料庫名稱：cookpal
+- 用戶表：users
+- 主要欄位：uid (UUID), account (帳號), password_hash (密碼雜湊), name (姓名)
+- 連接設定：MySQL 127.0.0.1:3306, 用戶名：root, 密碼：123456
+
+=== 功能特色 ===
+✅ 用戶註冊和登入
+✅ 密碼加密儲存 (bcrypt)
+✅ JWT 身份驗證
+✅ 個人資料管理
+✅ 響應式 UI 設計
+✅ 跨平台支援 (Web, Android, iOS)
