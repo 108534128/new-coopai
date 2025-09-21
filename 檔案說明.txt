@@ -4,6 +4,8 @@
 📁 frontend/          - Flutter 前端應用程式
 📁 backend/           - Flask 後端 API 服務
 📁 database/          - 資料庫設計檔案
+📁 models/            - 資料模型目錄（預留）
+📁 docs/              - 文件目錄（預留）
 📄 README.md          - 專案總體說明
 📄 啟動指令.txt       - 如何啟動系統的步驟
 📄 檔案說明.txt       - 本檔案，說明每個檔案的作用
@@ -37,6 +39,7 @@
 
 === database/ 目錄 (資料庫) ===
 📄 schema.sql        - 資料庫結構設計檔案
+📄 init_database.py  - 資料庫初始化腳本
 
 === 各檔案詳細說明 ===
 
