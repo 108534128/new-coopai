@@ -13,7 +13,7 @@ from datetime import datetime
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '456',  # 請修改為您的MySQL密碼
+    'password': '123456',  # 請修改為您的MySQL密碼
     'charset': 'utf8mb4'
 }
 
