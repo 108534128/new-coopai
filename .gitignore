@@ -1,0 +1,49 @@
+# 不要上傳的檔案
+
+# 後端配置檔案
+backend/app.py
+
+# 環境變數檔案
+.env
+.env.local
+.env.production
+
+# Python 快取檔案
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 資料庫檔案
+*.db
+*.sqlite3
+
+# 日誌檔案
+*.log
+
+# 系統檔案
+.DS_Store
+Thumbs.db
+
+# IDE 檔案
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 依賴套件
+node_modules/
+venv/
+env/
+
+# Flutter 建置檔案
+frontend/build/
+frontend/.dart_tool/
+frontend/.packages
+frontend/.pub-cache/
+frontend/.pub/
+frontend/pubspec.lock
+
+# 其他
+*.tmp
+*.temp
