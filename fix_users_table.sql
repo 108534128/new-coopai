@@ -1,8 +1,0 @@
-USE cookpal;
-ALTER TABLE favorites DROP FOREIGN KEY fk_fav_user;
-ALTER TABLE history DROP FOREIGN KEY fk_hist_user;
-ALTER TABLE users MODIFY COLUMN uid INT AUTO_INCREMENT;
-ALTER TABLE users MODIFY COLUMN name VARCHAR(100) NULL;
-ALTER TABLE favorites ADD CONSTRAINT fk_fav_user FOREIGN KEY (user_id) REFERENCES users(uid);
-ALTER TABLE history ADD CONSTRAINT fk_hist_user FOREIGN KEY (user_id) REFERENCES users(uid);
-DESCRIBE users;
