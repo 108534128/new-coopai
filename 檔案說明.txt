@@ -45,24 +45,25 @@
 
 【前端檔案】
 - main.dart: 應用程式主入口，設定路由和主題
-- login_screen.dart: 用戶登入界面
-- register_screen.dart: 用戶註冊界面
+- login_screen.dart: 用戶登入界面（使用帳號和密碼）
+- register_screen.dart: 用戶註冊界面（帳號、姓名、密碼）
 - home_screen.dart: 主頁面，顯示功能選單
 - profile_screen.dart: 個人資料查看和編輯
-- user.dart: 定義用戶資料結構
+- user.dart: 定義用戶資料結構（uid, account, name）
 - auth_provider.dart: 管理登入狀態和用戶資料
 - api_service.dart: 處理與後端的 API 通訊
 - custom_text_field.dart: 統一的輸入框樣式
 - loading_button.dart: 帶載入動畫的按鈕
 
 【後端檔案】
-- app.py: 包含所有 API 端點（登入、註冊、個人資料等）
+- app.py: 包含所有 API 端點（登入、註冊、個人資料等），連接到 cookpal 資料庫
 - config.py: 資料庫連接、JWT 設定等配置
 - run.py: 啟動 Flask 伺服器
 - requirements.txt: 列出所有需要的 Python 套件
 
 【資料庫檔案】
 - schema.sql: 定義資料庫表格結構
+- init_database.py: 自動建立資料庫和表格的腳本
 
 【說明檔案】
 - README.md: 專案總體介紹和快速開始指南
