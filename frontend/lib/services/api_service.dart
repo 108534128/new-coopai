@@ -53,20 +53,18 @@ class ApiService {
 
   // 用戶註冊
   Future<Map<String, dynamic>> register({
-    required String username,
-    required String email,
+    required String account,
     required String password,
-    String? fullName,
+    String? name,
   }) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'username': username,
-          'email': email,
+          'account': account,
           'password': password,
-          'full_name': fullName,
+          'name': name,
         }),
       );
 
@@ -84,7 +82,7 @@ class ApiService {
 
   // 用戶登入
   Future<Map<String, dynamic>> login({
-    required String username,
+    required String account,
     required String password,
   }) async {
     try {
@@ -92,7 +90,7 @@ class ApiService {
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'username': username,
+          'account': account,
           'password': password,
         }),
       );
@@ -135,16 +133,16 @@ class ApiService {
 
   // 更新用戶資料
   Future<User> updateProfile({
-    String? fullName,
-    String? email,
+    String? name,
+    String? account,
   }) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/profile'),
         headers: await _getHeaders(),
         body: json.encode({
-          if (fullName != null) 'full_name': fullName,
-          if (email != null) 'email': email,
+          if (name != null) 'name': name,
+          if (account != null) 'account': account,
         }),
       );
 

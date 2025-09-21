@@ -10,7 +10,7 @@ from werkzeug.exceptions import BadRequest
 app = Flask(__name__)
 
 # 資料庫配置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@127.0.0.1/food_recommendation_system'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@127.0.0.1/cookpal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -25,20 +25,18 @@ CORS(app)  # 啟用 CORS 支援
 class User(db.Model):
     __tablename__ = 'users'
     
-    user_id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    uid = db.Column(db.String(36), primary_key=True)
+    account = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    full_name = db.Column(db.String(100))
+    name = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     
     def to_dict(self):
         return {
-            'user_id': self.user_id,
-            'username': self.username,
-            'email': self.email,
-            'full_name': self.full_name,
+            'uid': self.uid,
+            'account': self.account,
+            'name': self.name,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
@@ -75,33 +73,47 @@ def register():
     try:
         data = request.get_json()
         
+        # 除錯：顯示資料庫連接資訊
+        print(f"🔍 資料庫 URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        
+        # 除錯：檢查現有用戶數量
+        user_count = User.query.count()
+        print(f"📊 資料庫中現有用戶數量: {user_count}")
+        
+        # 除錯：列出所有現有用戶
+        existing_users = User.query.all()
+        print(f"👥 現有用戶列表:")
+        for user in existing_users:
+            print(f"  - ID: {user.uid}, 帳號: {user.account}, 姓名: {user.name}")
+        
         # 驗證必要欄位
-        if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+        if not data or not data.get('account') or not data.get('password'):
             return jsonify({
                 'error': '缺少必要欄位',
-                'message': '請提供用戶名、電子郵件和密碼'
+                'message': '請提供帳號和密碼'
             }), 400
         
         # 檢查用戶是否已存在
-        if User.query.filter_by(username=data['username']).first():
+        existing_account = User.query.filter_by(account=data['account']).first()
+        if existing_account:
+            print(f"❌ 帳號已存在: {data['account']}")
             return jsonify({
-                'error': '用戶名已存在',
-                'message': '請選擇其他用戶名'
-            }), 400
-            
-        if User.query.filter_by(email=data['email']).first():
-            return jsonify({
-                'error': '電子郵件已存在',
-                'message': '請使用其他電子郵件'
+                'error': '帳號已存在',
+                'message': '請選擇其他帳號'
             }), 400
         
         # 創建新用戶
         password_hash = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+        
+        # 生成 UUID 作為 uid
+        import uuid
+        user_uid = str(uuid.uuid4())
+        
         user = User(
-            username=data['username'],
-            email=data['email'],
+            uid=user_uid,
+            account=data['account'],
             password_hash=password_hash,
-            full_name=data.get('full_name', '')
+            name=data.get('name') or '未設定'
         )
         
         db.session.add(user)
@@ -126,16 +138,14 @@ def login():
     try:
         data = request.get_json()
         
-        if not data or not data.get('username') or not data.get('password'):
+        if not data or not data.get('account') or not data.get('password'):
             return jsonify({
                 'error': '缺少必要欄位',
-                'message': '請提供用戶名和密碼'
+                'message': '請提供帳號和密碼'
             }), 400
         
-        # 查找用戶（支援用戶名或電子郵件登入）
-        user = User.query.filter(
-            (User.username == data['username']) | (User.email == data['username'])
-        ).first()
+        # 查找用戶
+        user = User.query.filter_by(account=data['account']).first()
         
         # 檢查密碼（支援兩種格式：bcrypt 和 sha256）
         password_valid = False
@@ -151,11 +161,11 @@ def login():
         if not user or not password_valid:
             return jsonify({
                 'error': '登入失敗',
-                'message': '用戶名或密碼錯誤'
+                'message': '帳號或密碼錯誤'
             }), 401
         
         # 生成JWT token
-        access_token = create_access_token(identity=user.user_id)
+        access_token = create_access_token(identity=user.uid)
         
         return jsonify({
             'status': 'success',
@@ -175,8 +185,8 @@ def login():
 def get_profile():
     """獲取用戶資料"""
     try:
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        uid = get_jwt_identity()
+        user = User.query.get(uid)
         
         if not user:
             return jsonify({
@@ -200,8 +210,8 @@ def get_profile():
 def update_profile():
     """更新用戶資料"""
     try:
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
+        uid = get_jwt_identity()
+        user = User.query.get(uid)
         
         if not user:
             return jsonify({
@@ -212,21 +222,21 @@ def update_profile():
         data = request.get_json()
         
         # 更新允許的欄位
-        if 'full_name' in data:
-            user.full_name = data['full_name']
+        if 'name' in data:
+            user.name = data['name']
         
-        if 'email' in data:
-            # 檢查電子郵件是否已被其他用戶使用
+        if 'account' in data:
+            # 檢查帳號是否已被其他用戶使用
             existing_user = User.query.filter(
-                User.email == data['email'],
-                User.user_id != user_id
+                User.account == data['account'],
+                User.uid != uid
             ).first()
             if existing_user:
                 return jsonify({
-                    'error': '電子郵件已存在',
-                    'message': '請使用其他電子郵件'
+                    'error': '帳號已存在',
+                    'message': '請使用其他帳號'
                 }), 400
-            user.email = data['email']
+            user.account = data['account']
         
         db.session.commit()
         

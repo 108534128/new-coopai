@@ -14,9 +14,8 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _fullNameController = TextEditingController();
+  final _accountController = TextEditingController();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -24,9 +23,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _fullNameController.dispose();
+    _accountController.dispose();
+    _nameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -73,35 +71,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // 用戶名輸入框
+                // 帳號輸入框
                 CustomTextField(
-                  controller: _usernameController,
-                  labelText: '用戶名',
+                  controller: _accountController,
+                  labelText: '帳號',
                   prefixIcon: Icons.person,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '請輸入用戶名';
+                      return '請輸入帳號';
                     }
                     if (value.length < 3) {
-                      return '用戶名至少需要3個字符';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // 電子郵件輸入框
-                CustomTextField(
-                  controller: _emailController,
-                  labelText: '電子郵件',
-                  prefixIcon: Icons.email,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '請輸入電子郵件';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return '請輸入有效的電子郵件地址';
+                      return '帳號至少需要3個字符';
                     }
                     return null;
                   },
@@ -110,7 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 // 姓名輸入框
                 CustomTextField(
-                  controller: _fullNameController,
+                  controller: _nameController,
                   labelText: '姓名（選填）',
                   prefixIcon: Icons.badge,
                 ),
@@ -243,12 +223,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     final success = await authProvider.register(
-      username: _usernameController.text.trim(),
-      email: _emailController.text.trim(),
+      account: _accountController.text.trim(),
       password: _passwordController.text,
-      fullName: _fullNameController.text.trim().isEmpty 
+      name: _nameController.text.trim().isEmpty 
           ? null 
-          : _fullNameController.text.trim(),
+          : _nameController.text.trim(),
     );
 
     if (success && mounted) {

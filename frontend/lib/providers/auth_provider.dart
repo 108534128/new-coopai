@@ -33,13 +33,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // 登入
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String account, String password) async {
     _setLoading(true);
     _setError(null);
 
     try {
       final response = await _apiService.login(
-        username: username,
+        account: account,
         password: password,
       );
 
@@ -61,20 +61,18 @@ class AuthProvider extends ChangeNotifier {
 
   // 註冊
   Future<bool> register({
-    required String username,
-    required String email,
+    required String account,
     required String password,
-    String? fullName,
+    String? name,
   }) async {
     _setLoading(true);
     _setError(null);
 
     try {
       final response = await _apiService.register(
-        username: username,
-        email: email,
+        account: account,
         password: password,
-        fullName: fullName,
+        name: name,
       );
 
       if (response['status'] == 'success') {
@@ -127,8 +125,8 @@ class AuthProvider extends ChangeNotifier {
 
   // 更新用戶資料
   Future<bool> updateProfile({
-    String? fullName,
-    String? email,
+    String? name,
+    String? account,
   }) async {
     if (!isLoggedIn) return false;
 
@@ -137,8 +135,8 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final user = await _apiService.updateProfile(
-        fullName: fullName,
-        email: email,
+        name: name,
+        account: account,
       );
       
       _user = user;

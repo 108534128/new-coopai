@@ -36,8 +36,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _loadUserData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.user != null) {
-      _fullNameController.text = authProvider.user!.fullName ?? '';
-      _emailController.text = authProvider.user!.email;
+      _fullNameController.text = authProvider.user!.name ?? '';
+      _emailController.text = authProvider.user!.account;
     }
   }
 
@@ -125,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            authProvider.user!.username,
+                            authProvider.user!.account,
                             style: const TextStyle(fontSize: 16),
                           ),
                         ],
@@ -157,7 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )
                           else
                             Text(
-                              authProvider.user!.fullName ?? '未設定',
+                              authProvider.user!.name ?? '未設定',
                               style: const TextStyle(fontSize: 16),
                             ),
                         ],
@@ -199,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             )
                           else
                             Text(
-                              authProvider.user!.email,
+                              authProvider.user!.account,
                               style: const TextStyle(fontSize: 16),
                             ),
                         ],
@@ -310,10 +310,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     final success = await authProvider.updateProfile(
-      fullName: _fullNameController.text.trim().isEmpty 
+      name: _fullNameController.text.trim().isEmpty 
           ? null 
           : _fullNameController.text.trim(),
-      email: _emailController.text.trim(),
+      account: _emailController.text.trim(),
     );
 
     if (success && mounted) {

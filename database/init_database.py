@@ -13,11 +13,11 @@ from datetime import datetime
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'password',  # 請修改為您的MySQL密碼
+    'password': '123456',  # 請修改為您的MySQL密碼
     'charset': 'utf8mb4'
 }
 
-DATABASE_NAME = 'food_recommendation_system'
+DATABASE_NAME = 'cookpal'
 
 def create_database():
     """建立資料庫"""
@@ -25,31 +25,19 @@ def create_database():
         connection = pymysql.connect(**DB_CONFIG)
         cursor = connection.cursor()
         
-        # 建立資料庫
-        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DATABASE_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+        # 讀取並執行 schema.sql
+        with open('schema.sql', 'r', encoding='utf-8') as f:
+            sql_script = f.read()
+        
+        # 分割 SQL 語句並執行
+        sql_statements = [stmt.strip() for stmt in sql_script.split(';') if stmt.strip()]
+        
+        for statement in sql_statements:
+            if statement:
+                cursor.execute(statement)
+        
         print(f"✅ 資料庫 {DATABASE_NAME} 建立成功")
-        
-        # 使用資料庫
-        cursor.execute(f"USE {DATABASE_NAME}")
-        
-        # 建立用戶表
-        create_users_table = """
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INT PRIMARY KEY AUTO_INCREMENT,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            email VARCHAR(100) UNIQUE NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            full_name VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )
-        """
-        cursor.execute(create_users_table)
         print("✅ 用戶表建立成功")
-        
-        # 建立索引
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
         print("✅ 索引建立成功")
         
         connection.commit()
@@ -161,16 +149,8 @@ def main():
     if not create_database():
         return
     
-    # 插入測試資料
-    if not insert_test_data():
-        return
-    
     print("=" * 50)
     print("🎉 資料庫初始化完成！")
-    print("\n📝 測試帳戶:")
-    print("  用戶名: testuser, 密碼: password123")
-    print("  用戶名: admin, 密碼: admin123")
-    print("  用戶名: demo, 密碼: demo123")
     print("\n🔧 下一步:")
     print("1. 啟動 Flask 後端: python backend/app.py")
     print("2. 啟動 Flutter 前端: flutter run")

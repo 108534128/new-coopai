@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${authProvider.user?.fullName ?? authProvider.user?.username}',
+                        '${authProvider.user?.name ?? authProvider.user?.account}',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),

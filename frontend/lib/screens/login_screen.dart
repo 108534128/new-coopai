@@ -14,13 +14,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _accountController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -64,14 +64,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
-                // 用戶名輸入框
+                // 帳號輸入框
                 CustomTextField(
-                  controller: _usernameController,
-                  labelText: '用戶名或電子郵件',
+                  controller: _accountController,
+                  labelText: '帳號',
                   prefixIcon: Icons.person,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '請輸入用戶名或電子郵件';
+                      return '請輸入帳號';
                     }
                     return null;
                   },
@@ -174,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     final success = await authProvider.login(
-      _usernameController.text.trim(),
+      _accountController.text.trim(),
       _passwordController.text,
     );
 
