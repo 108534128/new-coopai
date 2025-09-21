@@ -74,5 +74,19 @@
 1. 用戶在前端輸入帳號密碼
 2. 前端透過 api_service.dart 呼叫後端 API
 3. 後端 app.py 驗證用戶資料
-4. 後端查詢 database/ 中的資料庫
+4. 後端查詢 cookpal 資料庫中的 users 表
 5. 返回結果給前端顯示
+
+=== 資料庫配置 ===
+- 資料庫名稱：cookpal
+- 用戶表：users
+- 主要欄位：uid (UUID), account (帳號), password_hash (密碼雜湊), name (姓名)
+- 連接設定：MySQL 127.0.0.1:3306, 用戶名：root, 密碼：123456
+
+=== 功能特色 ===
+✅ 用戶註冊和登入
+✅ 密碼加密儲存 (bcrypt)
+✅ JWT 身份驗證
+✅ 個人資料管理
+✅ 響應式 UI 設計
+✅ 跨平台支援 (Web, Android, iOS)
