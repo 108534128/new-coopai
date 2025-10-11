@@ -1,10 +1,30 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import '../models/recipe.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
+  // Allow overriding the API host at build/run time with --dart-define=API_HOST
+  // Examples:
+  // flutter run -d chrome --dart-define=API_HOST=http://localhost:5000
+  // flutter run -d emulator-5554 --dart-define=API_HOST=http://192.168.1.5:5000
+  static const String _envApiHost = String.fromEnvironment('API_HOST', defaultValue: '');
+
+  static String get baseUrl {
+    if (_envApiHost.isNotEmpty) {
+      // ensure no trailing slash
+      return _envApiHost.replaceAll(RegExp(r'\/+\$'), '') + '/api';
+    }
+
+    // Default behavior: on web use localhost, on Android emulator use 10.0.2.2
+    if (kIsWeb) {
+      return 'http://localhost:5000/api';
+    }
+    // Android emulator maps host machine's localhost to 10.0.2.2
+    return 'http://10.0.2.2:5000/api';
+  }
   
   // 獲取儲存的token
   Future<String?> _getToken() async {
@@ -31,6 +51,79 @@ class ApiService {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
+  }
+
+  // 獲取食譜列表
+  Future<List<Recipe>> getRecipes({int page = 1, int perPage = 10}) async {
+    try {
+      print('🔍 正在獲取食譜列表...');
+      print('📍 URL: $baseUrl/recipes?page=$page&per_page=$perPage');
+      
+      final headers = await _getHeaders();
+      print('🔑 Headers: $headers');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/recipes?page=$page&per_page=$perPage'),
+        headers: headers,
+      );
+
+      print('📤 Response status code: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        
+        if (!data.containsKey('recipes')) {
+          print('❌ Response does not contain recipes key');
+          print('🔍 Available keys: ${data.keys.toList()}');
+          throw Exception('Invalid response format: missing recipes key');
+        }
+        
+        final List<dynamic> recipesJson = data['recipes'];
+        print('📊 Found ${recipesJson.length} recipes');
+        
+        final recipes = recipesJson.map((json) {
+          try {
+            return Recipe.fromJson(json);
+          } catch (e) {
+            print('❌ Error parsing recipe: $e');
+            print('🔍 Problematic JSON: $json');
+            rethrow;
+          }
+        }).toList();
+        
+        print('✅ Successfully loaded ${recipes.length} recipes');
+        return recipes;
+      } else {
+        final errorBody = response.body;
+        print('❌ Server returned ${response.statusCode}');
+        print('❌ Error body: $errorBody');
+        throw Exception('Server returned ${response.statusCode}: $errorBody');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error fetching recipes: $e');
+      print('📋 Stack trace: $stackTrace');
+      throw Exception('Failed to load recipes: $e');
+    }
+  }
+
+  // 獲取單個食譜詳情
+  Future<Recipe> getRecipeDetails(String recipeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/recipes/$recipeId'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        return Recipe.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to load recipe details');
+      }
+    } catch (e) {
+      print('Error fetching recipe details: $e');
+      throw Exception('Failed to load recipe details');
+    }
   }
 
   // 健康檢查

@@ -62,14 +62,13 @@ class RecipeCard extends StatelessWidget {
                       Text(
                         recipe.name,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       const Spacer(),
-                      // 第一行：烹飪時間和份量
                       Row(
                         children: [
                           Icon(Icons.timer, size: 14, color: Colors.grey[600]),
@@ -78,14 +77,13 @@ class RecipeCard extends StatelessWidget {
                             child: Text(
                               recipe.cookMinutes != null ? '${recipe.cookMinutes} mins' : 'N/A',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                                    color: Colors.grey[600],
+                                  ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      // 第二行：按讚數
                       Row(
                         children: [
                           Icon(Icons.thumb_up, size: 14, color: Colors.grey[600]),
@@ -93,8 +91,8 @@ class RecipeCard extends StatelessWidget {
                           Text(
                             '${recipe.likes} likes',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                                  color: Colors.grey[600],
+                                ),
                           ),
                         ],
                       ),

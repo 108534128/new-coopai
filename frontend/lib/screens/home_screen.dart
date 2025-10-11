@@ -32,8 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadRecipes() async {
     if (_isLoading) return;
-    if (!mounted) return;
-
+    
     setState(() {
       _isLoading = true;
       _error = null;
@@ -41,13 +40,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final recipes = await _apiService.getRecipes();
-      if (!mounted) return;
       setState(() {
         _recipes = recipes;
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

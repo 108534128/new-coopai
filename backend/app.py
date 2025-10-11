@@ -12,7 +12,7 @@ from werkzeug.exceptions import BadRequest
 app = Flask(__name__)
 
 # 資料庫配置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@127.0.0.1/cookpal'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:10242/cookpal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -33,7 +33,7 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-    
+
     def to_dict(self):
         return {
             'uid': self.uid,
@@ -41,6 +41,60 @@ class User(db.Model):
             'name': self.name,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+
+class Recipe(db.Model):
+    __tablename__ = 'recipes'
+
+    uid = db.Column(db.String(36), primary_key=True)
+    external_id = db.Column(db.String(50), unique=True, nullable=True)
+    name = db.Column(db.String(255), nullable=True)
+    ingredients = db.Column(db.Text, nullable=True)
+    tag = db.Column(db.String(255), nullable=True)
+    porsi = db.Column(db.String(50), nullable=True)
+    cook_minutes = db.Column(db.Integer, nullable=True)
+    instructions = db.Column(db.Text, nullable=True)
+    image = db.Column(db.String(1024), nullable=True)
+    likes = db.Column(db.Integer, nullable=True, default=0)
+    created_at = db.Column(db.DateTime, nullable=True, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, nullable=True, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+    def to_dict(self):
+        return {
+            'uid': self.uid or '',  # 主鍵不能為空
+            'external_id': self.external_id or '',
+            'name': self.name or '',
+            'ingredients': self.ingredients or '',
+            'tag': self.tag or '',
+            'porsi': self.porsi or '',
+            'cook_minutes': self.cook_minutes,  # 允許為 null
+            'instructions': self.instructions or '',
+            'image': self.image or '',
+            'likes': self.likes or 0,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+# 中間表定義
+recipe_ingredients = db.Table('recipe_ingredients',
+    db.Column('recipe_id', db.String(36), db.ForeignKey('recipes.id'), primary_key=True),
+    db.Column('ingredient_id', db.String(36), db.ForeignKey('ingredients.id'), primary_key=True),
+    db.Column('amount', db.String(50)),
+    db.Column('created_at', db.DateTime, default=db.func.current_timestamp())
+)
+
+class Ingredient(db.Model):
+    __tablename__ = 'ingredients'
+
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+# 食譜按讚中間表
+recipe_likes = db.Table('recipe_likes',
+    db.Column('recipe_id', db.String(36), db.ForeignKey('recipes.uid'), primary_key=True),
+    db.Column('user_id', db.String(36), db.ForeignKey('users.uid'), primary_key=True),
+    db.Column('created_at', db.DateTime, default=db.func.current_timestamp())
+)
 
 # 錯誤處理
 @app.errorhandler(400)
@@ -68,6 +122,36 @@ def health_check():
         'message': 'API服務正常運行',
         'version': '1.0.0'
     })
+
+
+@app.route('/api/image-proxy', methods=['GET'])
+def image_proxy():
+    '''Fetch remote images and return them with CORS headers for Flutter web.'''
+    image_url = request.args.get('url')
+
+    if not image_url:
+        return jsonify({'error': 'missing_url', 'message': 'Image URL is required.'}), 400
+
+    parsed = urlparse(image_url)
+    if parsed.scheme not in ('http', 'https'):
+        return jsonify({'error': 'invalid_scheme', 'message': 'Only http/https URLs are allowed.'}), 400
+
+    try:
+        upstream_request = Request(image_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urlopen(upstream_request, timeout=10) as upstream_response:
+            data = upstream_response.read()
+            content_type = upstream_response.headers.get('Content-Type', 'application/octet-stream')
+
+        response = Response(data, content_type=content_type)
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+    except Exception as exc:
+        return jsonify({
+            'error': 'image_fetch_failed',
+            'message': str(exc)
+        }), 502
+
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -263,6 +347,130 @@ def logout():
         'status': 'success',
         'message': '登出成功'
     }), 200
+
+@app.route('/api/recipes', methods=['GET'])
+@jwt_required()
+def get_recipes():
+    """獲取食譜列表"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        # 先試著獲取所有食譜
+        query = Recipe.query.order_by(Recipe.created_at.desc())
+        
+        # 如果沒有食譜，創建一個示例食譜
+        if query.count() == 0:
+            import uuid
+            recipe = Recipe(
+                uid=str(uuid.uuid4()),
+                external_id='000001',
+                name='示例食譜：寶寶麥精銀耳湯',
+                ingredients='銀耳 30g,水 500ml',
+                tag='湯品',
+                porsi='2人份',
+                cook_minutes=30,
+                instructions='1. 將銀耳泡發,2. 加入水煮沸,3. 悶煮30分鐘即可',
+                image='https://tokyo-kitchen.icook.network/uploads/recipe/cover/479956/a296741a0c90c862.jpg',
+                likes=0
+            )
+            db.session.add(recipe)
+            db.session.commit()
+            
+            # 重新查詢
+            query = Recipe.query.order_by(Recipe.created_at.desc())
+
+        # 使用分頁
+        try:
+            pagination = query.paginate(
+                page=page,
+                per_page=per_page,
+                error_out=False
+            )
+        except TypeError:
+            # 舊版 SQLAlchemy 的寫法
+            pagination = query.paginate(
+                page,
+                per_page,
+                False
+            )
+
+        return jsonify({
+            'status': 'success',
+            'recipes': [recipe.to_dict() for recipe in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page,
+        }), 200
+
+    except Exception as e:
+        import traceback
+        print(f"錯誤：{str(e)}")
+        print(f"詳細錯誤：{traceback.format_exc()}")
+        return jsonify({
+            'error': '獲取食譜列表失敗',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/recipes/<string:recipe_id>', methods=['GET'])
+@jwt_required()
+def get_recipe(recipe_id):
+    """獲取食譜詳情"""
+    try:
+        recipe = Recipe.query.get(recipe_id)
+        if not recipe:
+            return jsonify({
+                'error': '食譜不存在',
+                'message': '找不到指定的食譜'
+            }), 404
+
+        return jsonify({
+            'status': 'success',
+            'recipe': recipe.to_dict()
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            'error': '獲取食譜詳情失敗',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/recipes/<string:recipe_id>/like', methods=['POST'])
+@jwt_required()
+def like_recipe(recipe_id):
+    """喜歡/取消喜歡食譜"""
+    try:
+        uid = get_jwt_identity()
+        recipe = Recipe.query.get(recipe_id)
+        
+        if not recipe:
+            return jsonify({
+                'error': '食譜不存在',
+                'message': '找不到指定的食譜'
+            }), 404
+            
+        user = User.query.get(uid)
+        if user in recipe.likes:
+            recipe.likes.remove(user)
+            message = '已取消喜歡'
+        else:
+            recipe.likes.append(user)
+            message = '已添加到喜歡'
+            
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': message,
+            'likes': recipe.likes.count()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': '操作失敗',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     with app.app_context():
