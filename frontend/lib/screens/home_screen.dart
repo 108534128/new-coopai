@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../models/recipe.dart';
+import '../widgets/recipe_card.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,14 +15,44 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final ApiService _apiService = ApiService();
+  List<Recipe> _recipes = [];
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    // 檢查登入狀態
+    // 檢查登入狀態並載入食譜
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthProvider>(context, listen: false).checkLoginStatus();
+      _loadRecipes(); // 載入食譜數據
     });
+  }
+
+  Future<void> _loadRecipes() async {
+    if (_isLoading) return;
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final recipes = await _apiService.getRecipes();
+      if (!mounted) return;
+      setState(() {
+        _recipes = recipes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -185,6 +218,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: '識別食材',
                   onTap: () {
                     setState(() {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('功能開發中...')),
+                      );
                       _selectedIndex = 1;
                     });
                   },
@@ -217,6 +253,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: '收藏的食譜',
                   onTap: () {
                     setState(() {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('功能開發中...')),
+                      );
                       _selectedIndex = 3;
                     });
                   },
@@ -316,32 +355,63 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+
   Widget _buildRecipesTab() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.restaurant_menu,
-            size: 80,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
-          Text(
-            '食譜推薦功能',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('載入失敗：$_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadRecipes,
+              child: const Text('重試'),
             ),
+          ],
+        ),
+      );
+    }
+
+    if (_recipes.isEmpty) {
+      return const Center(
+        child: Text('目前沒有食譜'),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: RefreshIndicator(
+        onRefresh: _loadRecipes,
+        child: GridView.builder(
+          padding: EdgeInsets.zero,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 4,
+            mainAxisSpacing: 4,
           ),
-          SizedBox(height: 8),
-          Text(
-            '功能開發中...',
-            style: TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-        ],
+          itemCount: _recipes.length,
+          itemBuilder: (context, index) {
+            final recipe = _recipes[index];
+            return RecipeCard(
+              recipe: recipe,
+              onTap: () {
+                // TODO: 導航到食譜詳情頁面
+                print('點擊了食譜：${recipe.name}');
+              },
+            );
+          },
+        ),
       ),
     );
   }
