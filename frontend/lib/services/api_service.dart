@@ -116,7 +116,12 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        return Recipe.fromJson(json.decode(response.body));
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final recipeJson = data['recipe'];
+        if (recipeJson is Map<String, dynamic>) {
+          return Recipe.fromJson(recipeJson);
+        }
+        throw Exception('Invalid response format: missing recipe data');
       } else {
         throw Exception('Failed to load recipe details');
       }

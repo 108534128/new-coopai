@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:food_recommendation_app/models/recipe.dart';
+import 'package:food_recommendation_app/screens/recipe_detail_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'providers/auth_provider.dart';
@@ -81,5 +83,16 @@ final GoRouter _router = GoRouter(
       path: '/profile',
       builder: (context, state) => const ProfileScreen(),
     ),
+    GoRoute(
+      path: '/recipe/:uid', 
+      builder: (context, state) {
+      final recipe = state.extra;
+      if (recipe == null) {
+        return const Scaffold(
+          body: Center(child: Text('找不到食譜')),
+        );
+      }
+      return RecipeDetailScreen(recipe: recipe as Recipe);
+    }),
   ],
 );

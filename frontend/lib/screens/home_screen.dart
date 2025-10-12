@@ -403,8 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return RecipeCard(
               recipe: recipe,
               onTap: () {
-                // TODO: 導航到食譜詳情頁面
-                print('點擊了食譜：${recipe.name}');
+                context.push(extra: recipe, '/recipe/${recipe.uid}');
               },
             );
           },
