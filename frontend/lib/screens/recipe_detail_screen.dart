@@ -11,6 +11,9 @@ class RecipeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cookMinutes = recipe.cookMinutes;
+    final showCookTime = cookMinutes != null && cookMinutes > 0;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(recipe.name),
@@ -73,14 +76,16 @@ class RecipeDetailScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                '實作時間: ${recipe.cookMinutes != null ? '${recipe.cookMinutes} mins' : 'N/A'}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
+              if (showCookTime) ...[
+                Text(
+                  '時間:  $cookMinutes mins ',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               const Text(
                 '食材',
                 style: TextStyle(

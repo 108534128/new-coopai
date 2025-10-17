@@ -32,6 +32,8 @@ class RecipeCard extends StatelessWidget {
             final bottomFlex = isHandset ? 3 : 2;
 
             final targetHeight = constraints.maxWidth / baseAspectRatio + additionalHeight;
+            final cookMinutes = recipe.cookMinutes;
+            final showCookTime = cookMinutes != null && cookMinutes > 0;
 
             return SizedBox(
               height: targetHeight,
@@ -84,21 +86,23 @@ class RecipeCard extends StatelessWidget {
                             const SizedBox(height: 6),
                           ],
                           const Spacer(),
-                          Row(
-                            children: [
-                              Icon(Icons.timer, size: 14, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  recipe.cookMinutes != null ? '${recipe.cookMinutes} mins' : 'N/A',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.grey[600],
-                                      ),
+                          if (showCookTime) ...[
+                            Row(
+                              children: [
+                                Icon(Icons.timer, size: 14, color: Colors.grey[600]),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    '$cookMinutes mins',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                          ],
                           Row(
                             children: [
                               Icon(Icons.thumb_up, size: 14, color: Colors.grey[600]),
