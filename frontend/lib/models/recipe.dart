@@ -34,6 +34,9 @@ class Recipe {
   List<String> get instructionsList =>
       instructions.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
+  List<String> get tagsList =>
+      tag.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       uid: json['uid'] ?? '',
