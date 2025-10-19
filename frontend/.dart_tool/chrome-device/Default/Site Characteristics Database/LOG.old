@@ -1,13 +1,7 @@
-2025/10/12-03:38:48.658 470 Reusing MANIFEST C:\Users\wchay\AppData\Local\Temp\flutter_tools.9c087d0a\flutter_tools_chrome_device.d99f444b\Default\Site Characteristics Database/MANIFEST-000001
-2025/10/12-03:38:48.659 470 Recovering log #3
-2025/10/12-03:38:48.659 470 Level-0 table #13: started
-2025/10/12-03:38:48.662 470 Level-0 table #13: 350 bytes OK
-2025/10/12-03:38:48.662 470 Recovering log #6
-2025/10/12-03:38:48.663 470 Level-0 table #14: started
-2025/10/12-03:38:48.666 470 Level-0 table #14: 228 bytes OK
-2025/10/12-03:38:48.666 470 Recovering log #10
-2025/10/12-03:38:48.667 470 Reusing old log C:\Users\wchay\AppData\Local\Temp\flutter_tools.9c087d0a\flutter_tools_chrome_device.d99f444b\Default\Site Characteristics Database/000010.log 
-2025/10/12-03:38:48.670 470 Delete type=0 #3
-2025/10/12-03:38:48.670 470 Delete type=2 #4
-2025/10/12-03:38:48.670 470 Delete type=2 #6
-2025/10/12-03:38:48.671 470 Delete type=0 #6
+2025/10/19-15:23:58.417 5c60 Reusing MANIFEST C:\Users\User\AppData\Local\Temp\flutter_tools.d4ecbf8e\flutter_tools_chrome_device.c1484ad5\Default\Site Characteristics Database/MANIFEST-000001
+2025/10/19-15:23:58.421 5c60 Recovering log #10
+2025/10/19-15:23:58.421 5c60 Reusing old log C:\Users\User\AppData\Local\Temp\flutter_tools.d4ecbf8e\flutter_tools_chrome_device.c1484ad5\Default\Site Characteristics Database/000010.log 
+2025/10/19-15:23:58.422 5c60 Delete type=0 #3
+2025/10/19-15:23:58.422 5c60 Delete type=2 #4
+2025/10/19-15:23:58.422 5c60 Delete type=2 #6
+2025/10/19-15:23:58.422 5c60 Delete type=0 #6

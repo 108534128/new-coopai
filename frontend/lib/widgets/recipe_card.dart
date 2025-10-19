@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/recipe.dart';
 import '../services/api_service.dart';
 
-class RecipeCard extends StatelessWidget {
+class RecipeCard extends StatefulWidget {
   final Recipe recipe;
   final VoidCallback? onTap;
 
@@ -14,13 +14,68 @@ class RecipeCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<RecipeCard> createState() => _RecipeCardState();
+}
+
+class _RecipeCardState extends State<RecipeCard> {
+  final ApiService _apiService = ApiService();
+  bool isFavorite = false;
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final status = await _apiService.checkFavorite(widget.recipe.uid);
+    if (mounted) {
+      setState(() => isFavorite = status);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (isLoading) return;
+
+    setState(() => isLoading = true);
+
+    Map<String, dynamic> result;
+    if (isFavorite) {
+      result = await _apiService.removeFavorite(widget.recipe.uid);
+    } else {
+      result = await _apiService.addFavorite(widget.recipe.uid);
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+        if (result['success']) {
+          isFavorite = !isFavorite;
+        }
+      });
+
+      // 顯示提示訊息
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: result['success'] ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final imageUrl = _resolveImageUrl(recipe.image);
+    final imageUrl = _resolveImageUrl(widget.recipe.image);
 
     return Card(
       elevation: 4,
       margin: const EdgeInsets.all(4),
       child: InkWell(
+<<<<<<< HEAD
         onTap: onTap,
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -60,6 +115,99 @@ class RecipeCard extends StatelessWidget {
                                 child: Icon(Icons.error_outline, color: Colors.grey),
                               );
                             },
+=======
+        onTap: widget.onTap,
+        child: AspectRatio(
+          aspectRatio: 0.7,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Container(color: Colors.grey[200]),
+                      Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(child: CircularProgressIndicator());
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(Icons.error_outline, color: Colors.grey),
+                          );
+                        },
+                      ),
+                      // 愛心按鈕 - 放在圖片右上角
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: isLoading
+                              ? const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                )
+                              : IconButton(
+                                  icon: Icon(
+                                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                                    color: isFavorite ? Colors.red : Colors.grey[600],
+                                    size: 20,
+                                  ),
+                                  onPressed: _toggleFavorite,
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.recipe.name,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Icon(Icons.timer, size: 14, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.recipe.cookMinutes != null 
+                                  ? '${widget.recipe.cookMinutes} mins' 
+                                  : 'N/A',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
+                            ),
+>>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
                           ),
                         ],
                       ),
@@ -73,9 +221,15 @@ class RecipeCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
+<<<<<<< HEAD
                             recipe.name,
                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
+=======
+                            '${widget.recipe.likes} likes',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.grey[600],
+>>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
                                 ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -135,6 +289,7 @@ class RecipeCard extends StatelessWidget {
     final encoded = Uri.encodeComponent(image);
     return '${ApiService.baseUrl}/image-proxy?url=$encoded';
   }
+<<<<<<< HEAD
 }
 
 class _RecipeTagList extends StatelessWidget {
@@ -361,3 +516,6 @@ const double _tagChipHorizontalPadding = 8.0;
 const double _tagChipVerticalPadding = 4.0;
 const double _tagChipSpacing = 6.0;
 const double _tagChipRunSpacing = 6.0;
+=======
+}
+>>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8

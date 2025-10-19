@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../models/recipe.dart';
 import '../widgets/recipe_card.dart';
 import '../services/api_service.dart';
+import '../screens/favorites_screen.dart';
+import '../screens/history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -215,11 +217,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: '識別食材',
                   onTap: () {
                     setState(() {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('功能開發中...')),
-                      );
                       _selectedIndex = 1;
                     });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('功能開發中...')),
+                    );
                   },
                 ),
               ),
@@ -250,9 +252,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   subtitle: '收藏的食譜',
                   onTap: () {
                     setState(() {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('功能開發中...')),
-                      );
                       _selectedIndex = 3;
                     });
                   },
@@ -265,9 +264,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: '歷史記錄',
                   subtitle: '查看歷史',
                   onTap: () {
-                    // TODO: 實作歷史記錄功能
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('功能開發中...')),
+                    // 導航到歷史記錄頁面
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HistoryScreen(),
+                      ),
                     );
                   },
                 ),
@@ -352,8 +354,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-
   Widget _buildRecipesTab() {
     if (_isLoading) {
       return const Center(
@@ -403,6 +403,9 @@ class _HomeScreenState extends State<HomeScreen> {
             return RecipeCard(
               recipe: recipe,
               onTap: () {
+                // 記錄到歷史
+                //_apiService.addHistory(recipe.uid);
+                // 導航到食譜詳細頁面
                 context.push(extra: recipe, '/recipe/${recipe.uid}');
               },
             );
@@ -413,32 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFavoritesTab() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite,
-            size: 80,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
-          Text(
-            '我的收藏功能',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '功能開發中...',
-            style: TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
+    // 使用 FavoritesScreen
+    return const FavoritesScreen();
   }
 }
