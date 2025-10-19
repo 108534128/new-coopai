@@ -12,7 +12,7 @@ from werkzeug.exceptions import BadRequest
 app = Flask(__name__)
 
 # 資料庫配置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:10242/cookpal'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:16465/cookpal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -73,6 +73,52 @@ class Recipe(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+import uuid
+
+class Favorite(db.Model):
+    __tablename__ = 'favorites'
+    
+    uid = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('users.uid'), nullable=False)
+    recipe_id = db.Column(db.String(36), db.ForeignKey('recipes.uid'), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    # 建立關聯
+    user = db.relationship('User', backref=db.backref('favorites', lazy=True))
+    recipe = db.relationship('Recipe', backref=db.backref('favorited_by', lazy=True))
+    
+    def to_dict(self):
+        return {
+            'uid': self.uid,
+            'user_id': self.user_id,
+            'recipe_id': self.recipe_id,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            # 包含食譜資訊
+            'recipe': self.recipe.to_dict() if self.recipe else None
+        }
+
+
+class History(db.Model):
+    __tablename__ = 'history'
+    
+    uid = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('users.uid'), nullable=False)
+    recipe_id = db.Column(db.String(36), db.ForeignKey('recipes.uid'), nullable=False)  # ← 改成 recipe_id (去掉 s)
+    search_time = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    user = db.relationship('User', backref=db.backref('history', lazy=True))
+    recipe = db.relationship('Recipe', backref=db.backref('viewed_by', lazy=True))
+    
+    def to_dict(self):
+        return {
+            'uid': self.uid,
+            'user_id': self.user_id,
+            'recipe_id': self.recipe_id,  # ← 這裡也要改
+            'search_time': self.search_time.isoformat() if self.search_time else None,
+            'recipe': self.recipe.to_dict() if self.recipe else None
+        }
+
 
 # 中間表定義
 recipe_ingredients = db.Table('recipe_ingredients',
@@ -411,6 +457,347 @@ def get_recipes():
             'error': '獲取食譜列表失敗',
             'message': str(e)
         }), 500
+
+
+# ==================== 我的最愛 API ====================
+
+@app.route('/api/favorites', methods=['POST'])
+@jwt_required()
+def add_favorite():
+    """新增到我的最愛"""
+    try:
+        uid = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data or not data.get('recipe_id'):
+            return jsonify({
+                'error': '缺少必要欄位',
+                'message': '請提供食譜 ID'
+            }), 400
+        
+        recipe_id = data['recipe_id']
+        
+        # 檢查食譜是否存在
+        recipe = Recipe.query.get(recipe_id)
+        if not recipe:
+            return jsonify({
+                'error': '食譜不存在',
+                'message': '找不到指定的食譜'
+            }), 404
+        
+        # 檢查是否已經在最愛中
+        existing_favorite = Favorite.query.filter_by(
+            user_id=uid,
+            recipe_id=recipe_id
+        ).first()
+        
+        if existing_favorite:
+            return jsonify({
+                'error': '已在最愛中',
+                'message': '此食譜已在您的最愛清單中'
+            }), 400
+        
+        # 新增到最愛
+        favorite = Favorite(
+            user_id=uid,
+            recipe_id=recipe_id
+        )
+        
+        db.session.add(favorite)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '成功加入最愛',
+            'favorite': favorite.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': '新增最愛失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/favorites/<string:recipe_id>', methods=['DELETE'])
+@jwt_required()
+def remove_favorite(recipe_id):
+    """從我的最愛移除"""
+    try:
+        uid = get_jwt_identity()
+        
+        # 查找最愛項目
+        favorite = Favorite.query.filter_by(
+            user_id=uid,
+            recipe_id=recipe_id
+        ).first()
+        
+        if not favorite:
+            return jsonify({
+                'error': '找不到最愛項目',
+                'message': '此食譜不在您的最愛清單中'
+            }), 404
+        
+        # 刪除最愛
+        db.session.delete(favorite)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '成功移除最愛'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': '移除最愛失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/favorites', methods=['GET'])
+@jwt_required()
+def get_favorites():
+    """取得我的最愛清單"""
+    try:
+        uid = get_jwt_identity()
+        
+        # 取得使用者的所有最愛
+        favorites = Favorite.query.filter_by(user_id=uid)\
+            .order_by(Favorite.created_at.desc())\
+            .all()
+        
+        # 格式化結果,包含食譜完整資訊
+        favorites_list = []
+        for fav in favorites:
+            if fav.recipe:  # 確保食譜存在
+                recipe_data = fav.recipe.to_dict()
+                # 確保包含 image 欄位
+                favorites_list.append({
+                    'uid': recipe_data.get('uid'),
+                    'name': recipe_data.get('name'),
+                    'image': recipe_data.get('image'),
+                    'tag': recipe_data.get('tag'),
+                    'cook_minutes': recipe_data.get('cook_minutes'),
+                    'ingredients': recipe_data.get('ingredients'),
+                    'instructions': recipe_data.get('instructions'),
+                    'porsi': recipe_data.get('porsi'),
+                    'likes': recipe_data.get('likes'),
+                    'favorite_uid': fav.uid,
+                    'favorited_at': fav.created_at.isoformat() if fav.created_at else None
+                })
+        
+        return jsonify({
+            'status': 'success',
+            'favorites': favorites_list,
+            'total': len(favorites_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': '取得最愛清單失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/favorites/check/<string:recipe_id>', methods=['GET'])
+@jwt_required()
+def check_favorite(recipe_id):
+    """檢查食譜是否在最愛中"""
+    try:
+        uid = get_jwt_identity()
+        
+        favorite = Favorite.query.filter_by(
+            user_id=uid,
+            recipe_id=recipe_id
+        ).first()
+        
+        return jsonify({
+            'status': 'success',
+            'is_favorite': favorite is not None
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': '檢查最愛狀態失敗',
+            'message': str(e)
+        }), 500
+
+
+# ==================== 歷史紀錄 API ====================
+
+@app.route('/api/history', methods=['POST'])
+@jwt_required()
+def add_history():
+    """新增歷史紀錄"""
+    try:
+        uid = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data or not data.get('recipe_id'):
+            return jsonify({
+                'error': '缺少必要欄位',
+                'message': '請提供食譜 ID'
+            }), 400
+        
+        recipe_id = data['recipe_id']
+        
+        # 檢查食譜是否存在
+        recipe = Recipe.query.get(recipe_id)
+        if not recipe:
+            return jsonify({
+                'error': '食譜不存在',
+                'message': '找不到指定的食譜'
+            }), 404
+        
+        # 檢查今天是否已有相同的歷史紀錄
+        from datetime import datetime, date
+        today = date.today()
+        existing_history = History.query.filter(
+            History.user_id == uid,
+            History.recipe_id == recipe_id,  # ← 修正這裡
+            db.func.date(History.search_time) == today
+        ).first()
+        
+        if existing_history:
+            # 更新時間
+            existing_history.search_time = datetime.now()
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': '已更新瀏覽時間',
+                'history': existing_history.to_dict()
+            }), 200
+        else:
+            # 新增歷史紀錄
+            history = History(
+                user_id=uid,
+                recipe_id=recipe_id  # ← 修正這裡
+            )
+            
+            db.session.add(history)
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': '成功記錄歷史',
+                'history': history.to_dict()
+            }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"新增歷史紀錄錯誤: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({
+            'error': '新增歷史紀錄失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/history', methods=['GET'])
+@jwt_required()
+def get_history():
+    """取得歷史紀錄"""
+    try:
+        uid = get_jwt_identity()
+        
+        # 取得查詢參數
+        limit = request.args.get('limit', 50, type=int)
+        
+        # 取得使用者的歷史紀錄
+        history_items = History.query.filter_by(user_id=uid)\
+            .order_by(History.search_time.desc())\
+            .limit(limit)\
+            .all()
+        
+        # 格式化結果,包含食譜完整資訊
+        history_list = []
+        for item in history_items:
+            if item.recipe:  # 確保食譜存在
+                recipe_data = item.recipe.to_dict()
+                # 添加歷史的 uid 和 search_time
+                recipe_data['history_uid'] = item.uid
+                recipe_data['search_time'] = item.search_time.isoformat() if item.search_time else None
+                history_list.append(recipe_data)
+        
+        return jsonify({
+            'status': 'success',
+            'history': history_list,
+            'total': len(history_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': '取得歷史紀錄失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/history/<int:history_id>', methods=['DELETE'])
+@jwt_required()
+def delete_history_item(history_id):
+    """刪除單筆歷史紀錄"""
+    try:
+        uid = get_jwt_identity()
+        
+        # 查找歷史紀錄(確保是該使用者的紀錄)
+        history_item = History.query.filter_by(
+            uid=history_id,
+            user_id=uid
+        ).first()
+        
+        if not history_item:
+            return jsonify({
+                'error': '找不到歷史紀錄',
+                'message': '此歷史紀錄不存在或不屬於您'
+            }), 404
+        
+        # 刪除歷史紀錄
+        db.session.delete(history_item)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '成功刪除歷史紀錄'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': '刪除歷史紀錄失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/history/clear', methods=['DELETE'])
+@jwt_required()
+def clear_history():
+    """清空所有歷史紀錄"""
+    try:
+        uid = get_jwt_identity()
+        
+        # 刪除該使用者的所有歷史紀錄
+        deleted_count = History.query.filter_by(user_id=uid).delete()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '成功清空歷史紀錄',
+            'deleted_count': deleted_count
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': '清空歷史紀錄失敗',
+            'message': str(e)
+        }), 500
+
+        
 
 @app.route('/api/recipes/<string:recipe_id>', methods=['GET'])
 @jwt_required()
