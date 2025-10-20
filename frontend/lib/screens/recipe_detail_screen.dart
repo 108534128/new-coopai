@@ -1,13 +1,10 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
-<<<<<<< HEAD
-import '../screens/recipe_walkthrough_screen.dart';
-=======
-import '../widgets/recipe_card.dart';
 import '../widgets/favorite_button.dart';
->>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
 import '../services/api_service.dart';
+import 'recipe_walkthrough_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 class RecipeDetailScreen extends StatefulWidget {
   final Recipe recipe;
@@ -34,9 +31,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cookMinutes = recipe.cookMinutes;
-    final showCookTime = cookMinutes != null && cookMinutes > 0;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.recipe.name),
@@ -46,8 +40,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             recipeId: widget.recipe.uid,
             size: 28,
             onFavoriteChanged: (isFavorite) {
-              // 可選:當最愛狀態改變時的回調
-              print('最愛狀態改變: $isFavorite');
             },
           ),
           const SizedBox(width: 8),
@@ -59,8 +51,8 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-<<<<<<< HEAD
-              ClipRRect(
+              // 食譜卡片(包含圖片)
+            ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
@@ -68,9 +60,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     fit: StackFit.expand,
                     children: [
                       Container(color: Colors.grey[200]),
-                      if (recipe.image.isNotEmpty)
+                      if (widget.recipe.image.isNotEmpty)
                         Image.network(
-                          _resolveImageUrl(recipe.image),
+                          _resolveImageUrl(widget.recipe.image),
                           fit: BoxFit.cover,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) return child;
@@ -91,13 +83,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-=======
-              // 食譜卡片(包含圖片)
-              RecipeCard(recipe: widget.recipe),
-              const SizedBox(height: 16),
-              
               // 食譜名稱
->>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
               Text(
                 widget.recipe.name,
                 style: const TextStyle(
@@ -106,31 +92,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-<<<<<<< HEAD
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (recipe.updatedAt.isNotEmpty)
-                    Text(
-                      '上次更新時間: ${recipe.updatedAt}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (showCookTime) ...[
-                Text(
-                  '時間:  $cookMinutes mins ',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-=======
               
               // 烹飪時間和份量
               Row(
@@ -182,9 +143,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 16),
-              
               // 食材列表
->>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
               const Text(
                 '食材',
                 style: TextStyle(
@@ -233,11 +192,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
               
               // 烹飪步驟
               const Text(
-<<<<<<< HEAD
-                '步驟',
-=======
                 '烹飪步驟',
->>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -289,32 +244,24 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     ],
                   ),
                 ),
-              ),
-<<<<<<< HEAD
-              if (recipe.instructionsList.isNotEmpty) ...[
-                const SizedBox(height: 24),
+              ), 
+              const SizedBox(height: 24),
                 Align(
                   alignment: Alignment.centerRight,
                   child: ElevatedButton.icon(
-                    onPressed: () => _openWalkthrough(context),
+                    onPressed: () => _openWalkthrough(context, widget.recipe),
                     icon: const Icon(Icons.menu_book_outlined),
                     label: const Text('開始步驟教學'),
                   ),
                 ),
               ],
-=======
-              
-              const SizedBox(height: 24),
->>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
-            ],
           ),
         ),
       ),
     );
   }
-<<<<<<< HEAD
-
-  String _resolveImageUrl(String image) {
+}
+   String _resolveImageUrl(String image) {
     if (image.isEmpty) return image;
     if (!kIsWeb) return image;
 
@@ -322,14 +269,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     return '${ApiService.baseUrl}/image-proxy?url=$encoded';
   }
 
-  void _openWalkthrough(BuildContext context) {
+  void _openWalkthrough(BuildContext context, Recipe recipe) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RecipeWalkthroughScreen(recipe: recipe),
       ),
     );
   }
-}
-=======
-}
->>>>>>> 616a3c4a430dc53df30aa0b800da1a915f20b4e8
