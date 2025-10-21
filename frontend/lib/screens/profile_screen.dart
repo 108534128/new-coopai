@@ -15,7 +15,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
-  final _emailController = TextEditingController();
   bool _isEditing = false;
 
   @override
@@ -29,7 +28,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _fullNameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -37,7 +35,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.user != null) {
       _fullNameController.text = authProvider.user!.name ?? '';
-      _emailController.text = authProvider.user!.account;
     }
   }
 
@@ -166,7 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 電子郵件
+                  // 帳號
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -174,34 +171,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            '電子郵件',
+                            '帳號',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.grey,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          if (_isEditing)
-                            CustomTextField(
-                              controller: _emailController,
-                              labelText: '電子郵件',
-                              prefixIcon: Icons.email,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return '請輸入電子郵件';
-                                }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                  return '請輸入有效的電子郵件地址';
-                                }
-                                return null;
-                              },
-                            )
-                          else
-                            Text(
-                              authProvider.user!.account,
-                              style: const TextStyle(fontSize: 16),
-                            ),
+                          Text(
+                            authProvider.user!.account,
+                            style: const TextStyle(fontSize: 16),
+                          ),
                         ],
                       ),
                     ),
@@ -313,7 +293,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       name: _fullNameController.text.trim().isEmpty 
           ? null 
           : _fullNameController.text.trim(),
-      account: _emailController.text.trim(),
     );
 
     if (success && mounted) {

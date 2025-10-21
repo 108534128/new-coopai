@@ -246,12 +246,19 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 ),
               ), 
               const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openWalkthrough(context, widget.recipe),
-                    icon: const Icon(Icons.menu_book_outlined),
-                    label: const Text('開始步驟教學'),
+                SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: 8 + MediaQuery.of(context).viewPadding.bottom, 
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _openWalkthrough(context, widget.recipe),
+                        icon: const Icon(Icons.menu_book_outlined),
+                        label: const Text('開始步驟教學'),
+                      ),
+                    ),
                   ),
                 ),
               ],

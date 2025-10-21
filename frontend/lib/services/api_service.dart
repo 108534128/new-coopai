@@ -56,7 +56,7 @@ class ApiService {
   // ==================== 食譜相關 ====================
 
   // 獲取食譜列表
-  Future<List<Recipe>> getRecipes({int page = 1, int perPage = 10}) async {
+  Future<List<Recipe>> getRecipes({int page = 1, int perPage = 200}) async {
     try {
       print('🔍 正在獲取食譜列表...');
       print('📍 URL: $baseUrl/recipes?page=$page&per_page=$perPage');
