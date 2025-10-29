@@ -1,3 +1,5 @@
+# backend/app.py
+
 from flask import Flask, request, jsonify, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -12,7 +14,7 @@ from werkzeug.exceptions import BadRequest
 app = Flask(__name__)
 
 # 資料庫配置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:16465/cookpal'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:11368/cookpal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -458,6 +460,136 @@ def get_recipes():
             'message': str(e)
         }), 500
 
+
+# ==================== 搜尋功能 API ====================
+# 請將以下代碼添加到 app.py 中 get_recipes() 函數之後
+
+@app.route('/api/recipes/search', methods=['GET'])
+@jwt_required()
+def search_recipes():
+    """搜尋食譜（支援文字搜尋和標籤篩選）"""
+    try:
+        # 取得搜尋參數
+        search_text = request.args.get('q', '').strip()  # 搜尋關鍵字
+        tags = request.args.getlist('tags')  # 標籤列表（可多選）
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # 建立基礎查詢
+        query = Recipe.query
+        
+        # 文字搜尋：搜尋 name, ingredients, tag 欄位
+        if search_text:
+            search_pattern = f'%{search_text}%'
+            query = query.filter(
+                db.or_(
+                    Recipe.name.like(search_pattern),
+                    Recipe.ingredients.like(search_pattern),
+                    Recipe.tag.like(search_pattern)
+                )
+            )
+        
+        # 標籤篩選：搜尋 tag 欄位（支援多標籤）
+        if tags:
+            tag_conditions = []
+            for tag in tags:
+                tag_conditions.append(Recipe.tag.like(f'%{tag}%'))
+            query = query.filter(db.or_(*tag_conditions))
+        
+        # 排序：最新的在前
+        query = query.order_by(Recipe.created_at.desc())
+        
+        # 分頁
+        try:
+            pagination = query.paginate(
+                page=page,
+                per_page=per_page,
+                error_out=False
+            )
+        except TypeError:
+            pagination = query.paginate(page, per_page, False)
+        
+        return jsonify({
+            'status': 'success',
+            'recipes': [recipe.to_dict() for recipe in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page,
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        print(f'搜尋錯誤：{str(e)}')
+        print(f'詳細錯誤：{traceback.format_exc()}')
+        return jsonify({
+            'error': '搜尋失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/categories', methods=['GET'])
+@jwt_required()
+def get_categories():
+    """取得所有分類"""
+    try:
+        categories = db.session.execute(
+            db.text('SELECT * FROM categories ORDER BY id')
+        ).fetchall()
+        
+        categories_list = []
+        for cat in categories:
+            categories_list.append({
+                'id': cat[0],
+                'category_name': cat[1]
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'categories': categories_list
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': '取得分類失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/keywords', methods=['GET'])
+@jwt_required()
+def get_keywords():
+    """取得關鍵字（可依分類篩選）"""
+    try:
+        category_id = request.args.get('category_id', type=int)
+        
+        if category_id:
+            keywords = db.session.execute(
+                db.text('SELECT * FROM keywords WHERE category_id = :cat_id ORDER BY id'),
+                {'cat_id': category_id}
+            ).fetchall()
+        else:
+            keywords = db.session.execute(
+                db.text('SELECT * FROM keywords ORDER BY category_id, id')
+            ).fetchall()
+        
+        keywords_list = []
+        for kw in keywords:
+            keywords_list.append({
+                'id': kw[0],
+                'category_id': kw[1],
+                'keyword_name': kw[2]
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'keywords': keywords_list
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': '取得關鍵字失敗',
+            'message': str(e)
+        }), 500
 
 # ==================== 我的最愛 API ====================
 

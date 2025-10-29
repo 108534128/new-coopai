@@ -7,6 +7,7 @@
       "name": "food_recommendation_app",
       "version": "1.0.0+1",
       "dependencies": [
+        "audioplayers",
         "cupertino_icons",
         "dio",
         "flutter",
@@ -118,6 +119,25 @@
         "test_api",
         "vector_math",
         "vm_service"
+      ]
+    },
+    {
+      "name": "audioplayers",
+      "version": "5.2.1",
+      "dependencies": [
+        "audioplayers_android",
+        "audioplayers_darwin",
+        "audioplayers_linux",
+        "audioplayers_platform_interface",
+        "audioplayers_web",
+        "audioplayers_windows",
+        "file",
+        "flutter",
+        "http",
+        "meta",
+        "path_provider",
+        "synchronized",
+        "uuid"
       ]
     },
     {
@@ -689,6 +709,92 @@
       ]
     },
     {
+      "name": "uuid",
+      "version": "4.5.1",
+      "dependencies": [
+        "crypto",
+        "fixnum",
+        "meta",
+        "sprintf"
+      ]
+    },
+    {
+      "name": "synchronized",
+      "version": "3.4.0",
+      "dependencies": []
+    },
+    {
+      "name": "path_provider",
+      "version": "2.1.5",
+      "dependencies": [
+        "flutter",
+        "path_provider_android",
+        "path_provider_foundation",
+        "path_provider_linux",
+        "path_provider_platform_interface",
+        "path_provider_windows"
+      ]
+    },
+    {
+      "name": "file",
+      "version": "7.0.1",
+      "dependencies": [
+        "meta",
+        "path"
+      ]
+    },
+    {
+      "name": "audioplayers_windows",
+      "version": "3.1.0",
+      "dependencies": [
+        "audioplayers_platform_interface",
+        "flutter"
+      ]
+    },
+    {
+      "name": "audioplayers_web",
+      "version": "4.1.0",
+      "dependencies": [
+        "audioplayers_platform_interface",
+        "flutter",
+        "flutter_web_plugins",
+        "js"
+      ]
+    },
+    {
+      "name": "audioplayers_platform_interface",
+      "version": "6.1.0",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "audioplayers_linux",
+      "version": "3.1.0",
+      "dependencies": [
+        "audioplayers_platform_interface",
+        "flutter"
+      ]
+    },
+    {
+      "name": "audioplayers_darwin",
+      "version": "5.0.2",
+      "dependencies": [
+        "audioplayers_platform_interface",
+        "flutter"
+      ]
+    },
+    {
+      "name": "audioplayers_android",
+      "version": "4.0.3",
+      "dependencies": [
+        "audioplayers_platform_interface",
+        "flutter"
+      ]
+    },
+    {
       "name": "permission_handler_platform_interface",
       "version": "4.3.0",
       "dependencies": [
@@ -930,14 +1036,6 @@
       ]
     },
     {
-      "name": "file",
-      "version": "7.0.1",
-      "dependencies": [
-        "meta",
-        "path"
-      ]
-    },
-    {
       "name": "typed_data",
       "version": "1.4.0",
       "dependencies": [
@@ -948,6 +1046,48 @@
       "name": "fixnum",
       "version": "1.1.1",
       "dependencies": []
+    },
+    {
+      "name": "sprintf",
+      "version": "7.0.0",
+      "dependencies": []
+    },
+    {
+      "name": "path_provider_windows",
+      "version": "2.3.0",
+      "dependencies": [
+        "ffi",
+        "flutter",
+        "path",
+        "path_provider_platform_interface"
+      ]
+    },
+    {
+      "name": "path_provider_platform_interface",
+      "version": "2.1.2",
+      "dependencies": [
+        "flutter",
+        "platform",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "path_provider_linux",
+      "version": "2.2.1",
+      "dependencies": [
+        "ffi",
+        "flutter",
+        "path",
+        "path_provider_platform_interface",
+        "xdg_directories"
+      ]
+    },
+    {
+      "name": "js",
+      "version": "0.6.7",
+      "dependencies": [
+        "meta"
+      ]
     },
     {
       "name": "plugin_platform_interface",
@@ -1009,36 +1149,6 @@
       ]
     },
     {
-      "name": "path_provider_windows",
-      "version": "2.3.0",
-      "dependencies": [
-        "ffi",
-        "flutter",
-        "path",
-        "path_provider_platform_interface"
-      ]
-    },
-    {
-      "name": "path_provider_platform_interface",
-      "version": "2.1.2",
-      "dependencies": [
-        "flutter",
-        "platform",
-        "plugin_platform_interface"
-      ]
-    },
-    {
-      "name": "path_provider_linux",
-      "version": "2.2.1",
-      "dependencies": [
-        "ffi",
-        "flutter",
-        "path",
-        "path_provider_platform_interface",
-        "xdg_directories"
-      ]
-    },
-    {
       "name": "ffi",
       "version": "2.1.4",
       "dependencies": []
@@ -1054,6 +1164,22 @@
       "dependencies": [
         "meta",
         "path"
+      ]
+    },
+    {
+      "name": "path_provider_foundation",
+      "version": "2.4.2",
+      "dependencies": [
+        "flutter",
+        "path_provider_platform_interface"
+      ]
+    },
+    {
+      "name": "path_provider_android",
+      "version": "2.2.19",
+      "dependencies": [
+        "flutter",
+        "path_provider_platform_interface"
       ]
     }
   ],

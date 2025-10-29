@@ -1,3 +1,5 @@
+// frontend/lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -21,15 +23,28 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Recipe> _recipes = [];
   bool _isLoading = false;
   String? _error;
+  
+  // ===== 新增：搜尋相關變數 =====
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _categories = [];
+  List<Map<String, dynamic>> _allKeywords = [];
+  List<String> _selectedTags = [];
+  bool _showFilters = false;
 
   @override
   void initState() {
     super.initState();
-    // 檢查登入狀態並載入食譜
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthProvider>(context, listen: false).checkLoginStatus();
-      _loadRecipes(); // 載入食譜數據
+      _loadRecipes();
+      _loadCategories(); // 新增：載入分類和關鍵字
     });
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose(); // 新增：釋放資源
+    super.dispose();
   }
 
   Future<void> _loadRecipes() async {
@@ -52,6 +67,84 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
     }
+  }
+  
+  // ===== 新增：載入分類和關鍵字 =====
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _apiService.getCategories();
+      final keywords = await _apiService.getKeywords();
+      
+      setState(() {
+        _categories = categories;
+        _allKeywords = keywords;
+      });
+    } catch (e) {
+      print('載入分類失敗: $e');
+    }
+  }
+  
+  // ===== 新增：執行搜尋 =====
+  Future<void> _performSearch() async {
+    if (_isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final searchText = _searchController.text.trim();
+      
+      // 如果沒有輸入任何搜尋條件，載入所有食譜
+      if (searchText.isEmpty && _selectedTags.isEmpty) {
+        final recipes = await _apiService.getRecipes();  // ← 直接取得所有食譜
+        setState(() {
+          _recipes = recipes;
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // 有搜尋條件時，使用搜尋 API
+      final recipes = await _apiService.searchRecipes(
+        searchText: searchText.isEmpty ? null : searchText,
+        tags: _selectedTags.isEmpty ? null : _selectedTags,
+      );
+      
+      setState(() {
+        _recipes = recipes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ 搜尋錯誤: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // ===== 新增：清除搜尋 =====
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _selectedTags.clear();
+      _isLoading = false;  // ← 確保清除 loading 狀態
+    });
+    _loadRecipes();  // 載入所有食譜
+  }
+  
+  // ===== 新增：切換標籤選擇 =====
+  void _toggleTag(String tag) {
+    setState(() {
+      if (_selectedTags.contains(tag)) {
+        _selectedTags.remove(tag);
+      } else {
+        _selectedTags.add(tag);
+      }
+    });
+    _performSearch(); // 自動搜尋
   }
 
   @override
@@ -164,7 +257,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 歡迎訊息
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               return Card(
@@ -199,7 +291,6 @@ class _HomeScreenState extends State<HomeScreen> {
           
           const SizedBox(height: 24),
           
-          // 功能卡片
           Text(
             '快速功能',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -264,7 +355,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: '歷史記錄',
                   subtitle: '查看歷史',
                   onTap: () {
-                    // 導航到歷史記錄頁面
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -354,7 +444,214 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ===== 食譜頁籤加入搜尋功能 =====
   Widget _buildRecipesTab() {
+    return Column(
+      children: [
+        // 搜尋框和篩選按鈕
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          color: Colors.white,
+          child: Column(
+            children: [
+              // 搜尋列
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: '搜尋食譜名稱、食材...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: _clearSearch,
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                      ),
+                      onChanged: (value) {
+                        setState(() {}); // 更新 UI 顯示清除按鈕
+                      },
+                      onSubmitted: (value) {
+                        _performSearch();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 搜尋按鈕
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Colors.green),
+                    onPressed: _performSearch,
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.green[50],
+                    ),
+                  ),
+                  // 篩選按鈕
+                  IconButton(
+                    icon: Icon(
+                      _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
+                      color: _selectedTags.isNotEmpty ? Colors.green : Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showFilters = !_showFilters;
+                      });
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedTags.isNotEmpty 
+                          ? Colors.green[50] 
+                          : Colors.grey[100],
+                    ),
+                  ),
+                ],
+              ),
+              
+              // 已選標籤顯示
+              if (_selectedTags.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _selectedTags.map((tag) {
+                      return Chip(
+                        label: Text(tag),
+                        deleteIcon: const Icon(Icons.close, size: 18),
+                        onDeleted: () => _toggleTag(tag),
+                        backgroundColor: Colors.green[100],
+                        labelStyle: const TextStyle(color: Colors.green),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              
+              // 標籤篩選區（展開/收起）
+              if (_showFilters)
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
+                  constraints: const BoxConstraints(
+                    maxHeight: 400,  // ← 限制最大高度
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: SingleChildScrollView(  // ← 新增：可滾動容器
+                    child: _buildFilterSection(),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        
+        // 分隔線
+        const Divider(height: 1),
+        
+        // 食譜列表
+        Expanded(
+          child: _buildRecipesList(),
+        ),
+      ],
+    );
+  }
+  
+  // ===== 新增：篩選區塊 =====
+  Widget _buildFilterSection() {
+    if (_categories.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('載入中...', style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              '篩選條件',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            if (_selectedTags.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedTags.clear();
+                  });
+                  _performSearch();
+                },
+                child: const Text('清除全部'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // 依分類顯示關鍵字
+        ..._categories.map((category) {
+          final categoryId = category['id'];
+          final categoryName = category['category_name'];
+          final keywords = _allKeywords
+              .where((kw) => kw['category_id'] == categoryId)
+              .toList();
+          
+          if (keywords.isEmpty) return const SizedBox.shrink();
+          
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  categoryName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: keywords.map((kw) {
+                  final keywordName = kw['keyword_name'];
+                  final isSelected = _selectedTags.contains(keywordName);
+                  
+                  return FilterChip(
+                    label: Text(keywordName),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      _toggleTag(keywordName);
+                    },
+                    selectedColor: Colors.green[100],
+                    checkmarkColor: Colors.green,
+                  );
+                }).toList(),
+              ),
+              const Divider(),
+            ],
+          );
+        }).toList(),
+      ],
+    );
+  }
+  
+  // ===== 新增：食譜列表顯示 =====
+  Widget _buildRecipesList() {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(),
@@ -371,7 +668,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('載入失敗：$_error'),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _loadRecipes,
+              onPressed: _performSearch,
               child: const Text('重試'),
             ),
           ],
@@ -380,15 +677,30 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (_recipes.isEmpty) {
-      return const Center(
-        child: Text('目前沒有食譜'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              '找不到符合的食譜',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _clearSearch,
+              child: const Text('清除搜尋'),
+            ),
+          ],
+        ),
       );
     }
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: RefreshIndicator(
-        onRefresh: _loadRecipes,
+        onRefresh: _performSearch,
         child: GridView.builder(
           padding: EdgeInsets.zero,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -403,9 +715,6 @@ class _HomeScreenState extends State<HomeScreen> {
             return RecipeCard(
               recipe: recipe,
               onTap: () {
-                // 記錄到歷史
-                //_apiService.addHistory(recipe.uid);
-                // 導航到食譜詳細頁面
                 context.push(extra: recipe, '/recipe/${recipe.uid}');
               },
             );
@@ -416,7 +725,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildFavoritesTab() {
-    // 使用 FavoritesScreen
     return const FavoritesScreen();
   }
 }

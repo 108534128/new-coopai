@@ -1,3 +1,5 @@
+// frontend/lib/models/recipe.dart
+
 class Recipe {
   final String uid;
   final String externalId;
