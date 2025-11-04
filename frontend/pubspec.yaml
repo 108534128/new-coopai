@@ -46,6 +46,10 @@ dependencies:
   
   # 音效播放
   audioplayers: ^5.2.0
+  
+  # 語音功能
+  flutter_tts: ^3.8.5
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:

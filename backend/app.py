@@ -12,7 +12,7 @@ from werkzeug.exceptions import BadRequest
 app = Flask(__name__)
 
 # 資料庫配置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:16465/cookpal'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:11368/cookpal'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
@@ -21,7 +21,15 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-CORS(app)  # 啟用 CORS 支援
+
+# 配置 CORS 以支援手機連接
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["*"],  # 允許所有來源（開發環境）
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # 用戶模型
 class User(db.Model):
@@ -455,6 +463,84 @@ def get_recipes():
         print(f"詳細錯誤：{traceback.format_exc()}")
         return jsonify({
             'error': '獲取食譜列表失敗',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/recipes/search', methods=['GET'])
+@jwt_required()
+def search_recipes():
+    """搜尋食譜"""
+    try:
+        # 獲取查詢參數
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        search_text = request.args.get('q', '')
+        tags = request.args.getlist('tags')  # 獲取多個標籤參數
+        
+        print(f"🔍 搜尋參數: q='{search_text}', tags={tags}, page={page}, per_page={per_page}")
+        
+        # 建立基礎查詢
+        query = Recipe.query
+        
+        # 如果有搜尋文字，在名稱、食材、說明中搜尋
+        if search_text:
+            search_pattern = f'%{search_text}%'
+            query = query.filter(
+                db.or_(
+                    Recipe.name.like(search_pattern),
+                    Recipe.ingredients.like(search_pattern),
+                    Recipe.instructions.like(search_pattern)
+                )
+            )
+        
+        # 如果有標籤，在標籤欄位中搜尋
+        if tags:
+            for tag in tags:
+                tag_pattern = f'%{tag}%'
+                query = query.filter(Recipe.tag.like(tag_pattern))
+        
+        # 按建立時間倒序排列
+        query = query.order_by(Recipe.created_at.desc())
+        
+        print(f"📊 查詢結果數量: {query.count()}")
+        
+        # 如果沒有找到任何食譜
+        if query.count() == 0:
+            return jsonify({
+                'error': '食譜不存在',
+                'message': '找不到指定的食譜'
+            }), 404
+        
+        # 使用分頁
+        try:
+            pagination = query.paginate(
+                page=page,
+                per_page=per_page,
+                error_out=False
+            )
+        except TypeError:
+            # 舊版 SQLAlchemy 的寫法
+            pagination = query.paginate(
+                page,
+                per_page,
+                False
+            )
+        
+        return jsonify({
+            'status': 'success',
+            'recipes': [recipe.to_dict() for recipe in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page,
+        }), 200
+
+    except Exception as e:
+        import traceback
+        print(f"搜尋錯誤：{str(e)}")
+        print(f"詳細錯誤：{traceback.format_exc()}")
+        return jsonify({
+            'error': '搜尋食譜失敗',
             'message': str(e)
         }), 500
 
