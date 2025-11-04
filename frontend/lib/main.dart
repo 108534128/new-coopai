@@ -1,3 +1,5 @@
+// frontend/lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:food_recommendation_app/models/recipe.dart';
 import 'package:food_recommendation_app/screens/recipe_detail_screen.dart';

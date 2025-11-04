@@ -1,3 +1,5 @@
+//frontend/lib/widgets/recipe_card.dart
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../models/recipe.dart';
