@@ -15,6 +15,7 @@ class DirectVoiceService extends ChangeNotifier {
   bool _isListening = false;
   bool _isWakeModeActive = false;
   bool _isCommandModeActive = false;
+  bool _isRestarting = false; // 防止重複啟動監聽
   
   // 回調函數
   Function(String)? _onVoiceCommand;
@@ -100,6 +101,28 @@ class DirectVoiceService extends ChangeNotifier {
         debugPrint('🏁 TTS 播放完成');
         _isSpeaking = false;
         notifyListeners();
+        
+        // TTS 播放完成後，如果在喚醒模式，重新啟動監聽
+        if (_isWakeModeActive) {
+          // 檢查語音識別是否真的在監聽
+          bool actuallyListening = _speechToText != null && _speechToText!.isListening;
+          debugPrint('🔍 TTS 完成後檢查：_isListening=$_isListening, actuallyListening=$actuallyListening, _isRestarting=$_isRestarting');
+          
+          if (!actuallyListening && !_isRestarting) {
+            Future.delayed(const Duration(milliseconds: 800), () {
+              // 再次檢查狀態
+              bool stillListening = _speechToText != null && _speechToText!.isListening;
+              if (_isWakeModeActive && !stillListening && !_isRestarting && !_isSpeaking) {
+                debugPrint('🔄 TTS 播放完成，重新啟動持續監聽...');
+                _startContinuousListening();
+              } else {
+                debugPrint('⚠️ 跳過重新啟動：stillListening=$stillListening, _isRestarting=$_isRestarting, _isSpeaking=$_isSpeaking');
+              }
+            });
+          } else {
+            debugPrint('💡 語音識別仍在運行，無需重新啟動');
+          }
+        }
       });
       
       _flutterTts!.setErrorHandler((msg) {
@@ -125,8 +148,11 @@ class DirectVoiceService extends ChangeNotifier {
       bool? available = await _speechToText!.initialize(
         onError: (val) {
           debugPrint('❌ STT 錯誤: $val');
-          if (_onVoiceError != null) {
+          // 過濾 error_busy 錯誤，不顯示通知（這是正常情況，表示服務正在忙碌）
+          if (val.errorMsg != 'error_busy' && _onVoiceError != null) {
             _onVoiceError!('語音識別錯誤: ${val.errorMsg}');
+          } else if (val.errorMsg == 'error_busy') {
+            debugPrint('💡 error_busy 錯誤已忽略（服務忙碌中，這是正常情況）');
           }
         },
         onStatus: (val) {
@@ -135,12 +161,12 @@ class DirectVoiceService extends ChangeNotifier {
           notifyListeners();
           
           // 在喚醒模式下，當監聽狀態變為 notListening 時自動重新開始
-          if (val == 'notListening' && _isWakeModeActive) {
+          if (val == 'notListening' && _isWakeModeActive && !_isRestarting) {
             debugPrint('🔄 喚醒模式：監聽結束，準備重新啟動...');
             
             // 短暫延遲後重新啟動監聽
             Future.delayed(const Duration(milliseconds: 1500), () {
-              if (_isWakeModeActive && !_speechToText!.isListening) {
+              if (_isWakeModeActive && !_speechToText!.isListening && !_isRestarting) {
                 debugPrint('🎤 重新啟動持續監聽...');
                 _startContinuousListening();
               }
@@ -148,11 +174,11 @@ class DirectVoiceService extends ChangeNotifier {
           }
           
           // 處理 done 狀態，確保在完成後重新監聽
-          if (val == 'done' && _isWakeModeActive) {
+          if (val == 'done' && _isWakeModeActive && !_isRestarting) {
             debugPrint('� 語音識別完成，準備重新開始監聽...');
             
-            Future.delayed(const Duration(milliseconds: 2000), () {
-              if (_isWakeModeActive && !_speechToText!.isListening) {
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              if (_isWakeModeActive && !_speechToText!.isListening && !_isRestarting) {
                 debugPrint('🔄 識別完成後重新啟動監聽...');
                 _startContinuousListening();
               }
@@ -270,8 +296,15 @@ class DirectVoiceService extends ChangeNotifier {
   
   /// 開始語音識別
   Future<void> startListening() async {
+    // 如果正在重啟或已經在監聽，則跳過
+    if (_isRestarting || (_speechToText != null && _speechToText!.isListening)) {
+      debugPrint('⚠️ 語音識別已在運行或正在重啟，跳過本次啟動');
+      return;
+    }
+    
     if (_speechToText != null) {
       try {
+        _isRestarting = true;
         debugPrint('🎤 使用 Speech to Text 啟動語音識別...');
         
         // 檢查權限，如果沒有權限就申請
@@ -305,16 +338,29 @@ class DirectVoiceService extends ChangeNotifier {
         await _speechToText!.listen(
           onResult: (SpeechRecognitionResult result) {
             String recognizedWords = result.recognizedWords;
-            debugPrint('🗣️ 識別到語音: $recognizedWords');
+            debugPrint('🗣️ 識別到語音: $recognizedWords (finalResult: ${result.finalResult})');
             
-            if (result.finalResult && recognizedWords.isNotEmpty) {
-              // 處理語音指令
-              _processVoiceCommand(recognizedWords);
+            // 處理語音識別結果（包括部分結果和最終結果）
+            if (recognizedWords.isNotEmpty) {
+              // 如果是最終結果，立即處理
+              if (result.finalResult) {
+                debugPrint('✅ 收到最終識別結果，處理語音指令...');
+                debugPrint('📋 識別文字: "$recognizedWords"');
+                _processVoiceCommand(recognizedWords);
+              } else {
+                // 部分結果也記錄，但等待最終結果
+                debugPrint('📝 收到部分識別結果: $recognizedWords (等待最終結果...)');
+              }
+            } else {
+              debugPrint('⚠️ 識別結果為空，可能沒有檢測到語音');
             }
           },
           localeId: 'zh_TW', // 使用繁體中文
-          partialResults: false,
-          listenMode: ListenMode.confirmation,
+          partialResults: true, // 啟用部分結果，可以更快響應
+          listenMode: ListenMode.dictation, // 使用 dictation 模式保持持續監聽
+          cancelOnError: false, // 錯誤時不取消監聽
+          listenFor: const Duration(seconds: 30), // 每次監聽最多30秒
+          pauseFor: const Duration(seconds: 3), // 靜音3秒後暫停
         );
         
         // 不依賴 listen 的返回值，而是等待狀態回調確認
@@ -331,13 +377,16 @@ class DirectVoiceService extends ChangeNotifier {
         }
         
         debugPrint('✅ Speech to Text 語音識別已啟動（強制確認）');
+        _isRestarting = false;
         
       } catch (e) {
         debugPrint('❌ Speech to Text 錯誤: $e');
+        _isRestarting = false;
         await _fallbackListening();
       }
     } else {
       debugPrint('⚠️ Speech to Text 未初始化');
+      _isRestarting = false;
       await _fallbackListening();
     }
   }
@@ -378,8 +427,19 @@ class DirectVoiceService extends ChangeNotifier {
   
   /// 處理語音指令
   void _processVoiceCommand(String recognizedWords) {
-    String command = recognizedWords.toLowerCase().trim();
-    debugPrint('🧠 處理語音指令: "$command"');
+    // 清理識別結果，移除多餘的空白和標點
+    String cleaned = recognizedWords.trim();
+    cleaned = cleaned.replaceAll(RegExp(r'[。，、！？；：]'), ''); // 移除標點符號
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ''); // 移除空白
+    
+    String command = cleaned.toLowerCase();
+    debugPrint('🧠 處理語音指令: 原始="$recognizedWords", 清理後="$command"');
+    
+    // 如果結果為空，直接返回
+    if (command.isEmpty) {
+      debugPrint('⚠️ 清理後的指令為空，忽略');
+      return;
+    }
     
     // 首先檢查是否為喚醒詞
     if (command.contains('嘿廚師') || command.contains('黑廚師') || command.contains('hey chef') || 
@@ -403,14 +463,22 @@ class DirectVoiceService extends ChangeNotifier {
       return; // 喚醒詞處理完成，不繼續處理其他指令
     }
     
-    // 處理功能指令（只在指令模式或正常模式下）
+    // 處理功能指令（在喚醒模式下可以直接說指令，不需要喚醒詞）
     bool commandExecuted = false;
     
+    // 下一步指令 - 更靈活的匹配
     if (command.contains('下一步') || command.contains('下一個') || command.contains('繼續') || 
-        command.contains('下個') || command.contains('下') || command.contains('next') || 
-        command.contains('前進') || command.contains('往下')) {
+        command.contains('下個') || command.contains('next') || 
+        command.contains('前進') || command.contains('往下') ||
+        command.contains('下一') || command.contains('繼續') ||
+        (command.length <= 3 && (command == '下' || command == 'next'))) {
       debugPrint('✅ 識別為下一步指令');
-      if (_onVoiceCommand != null) _onVoiceCommand!('next');
+      if (_onVoiceCommand != null) {
+        _onVoiceCommand!('next');
+        debugPrint('📤 已發送下一步指令回調');
+      } else {
+        debugPrint('⚠️ 語音指令回調未設置！');
+      }
       commandExecuted = true;
     } else if (command.contains('上一步') || command.contains('上一個') || command.contains('返回') || 
                command.contains('上個') || command.contains('上') || command.contains('previous') || 
@@ -436,26 +504,22 @@ class DirectVoiceService extends ChangeNotifier {
       commandExecuted = true;
     } else {
       debugPrint('🤷 未識別的指令: "$command"');
+      debugPrint('💡 可用的指令：下一步、上一步、重複、暫停、開始');
       if (_isWakeModeActive) {
-        debugPrint('💡 提示：請說 "嘿廚師" 喚醒後，再說指令');
+        debugPrint('💡 提示：在喚醒模式下可以直接說指令，例如："下一步"');
       }
-      if (_onVoiceError != null) {
-        _onVoiceError!('未識別的指令，請先說"嘿廚師"喚醒，然後說指令');
-      }
+      // 不顯示錯誤，只是記錄日誌，讓用戶可以繼續嘗試
+      debugPrint('🔄 未識別指令，繼續監聽...');
     }
     
-    // 如果執行了指令且在喚醒模式，回到喚醒監聽狀態
+    // 如果執行了指令且在喚醒模式，等待 TTS 播放完成後重新啟動監聽
     if (commandExecuted && _isWakeModeActive) {
       _isCommandModeActive = false;
       notifyListeners();
       
-      // 短暫延遲後重新開始監聽喚醒詞
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        if (_isWakeModeActive && !_isListening) {
-          debugPrint('🔄 指令執行完成，回到喚醒監聽模式');
-          _startContinuousListening();
-        }
-      });
+      // 等待 TTS 播放完成後再重新啟動監聽
+      // 使用一個標誌來追蹤是否需要重新啟動監聽
+      _restartListeningAfterTts();
     }
   }
   
@@ -512,10 +576,49 @@ class DirectVoiceService extends ChangeNotifier {
   
   /// 持續監聽模式
   void _startContinuousListening() {
-    if (!_isWakeModeActive) return;
+    if (!_isWakeModeActive) {
+      debugPrint('⚠️ 喚醒模式未啟動，無法開始持續監聽');
+      return;
+    }
+    
+    // 檢查語音識別是否真的在監聽
+    bool actuallyListening = _speechToText != null && _speechToText!.isListening;
+    
+    // 如果正在重啟或已經在監聽，則跳過
+    if (_isRestarting || actuallyListening) {
+      debugPrint('⚠️ 持續監聽已在運行，跳過本次啟動 (_isRestarting=$_isRestarting, actuallyListening=$actuallyListening)');
+      return;
+    }
+    
+    // 如果正在播放語音，等待播放完成（但 TTS 完成回調會處理，所以這裡可以繼續）
+    if (_isSpeaking) {
+      debugPrint('⏳ TTS 正在播放，但繼續啟動監聽（TTS 完成後會確保監聽）...');
+      // 不返回，繼續啟動監聽
+    }
     
     debugPrint('🔄 開始持續監聽...');
     startListening();
+  }
+  
+  /// 在 TTS 播放完成後重新啟動監聽
+  void _restartListeningAfterTts() {
+    // 如果正在播放語音，等待播放完成（TTS 完成回調會處理）
+    if (_isSpeaking) {
+      debugPrint('⏳ 等待 TTS 播放完成後重新啟動監聽...');
+      // TTS 完成回調會處理重新啟動，這裡不需要做任何事
+      return;
+    }
+    
+    // 如果沒有播放語音，直接重新啟動監聽
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      bool actuallyListening = _speechToText != null && _speechToText!.isListening;
+      if (_isWakeModeActive && !actuallyListening && !_isRestarting && !_isSpeaking) {
+        debugPrint('🔄 指令執行完成（無 TTS），重新啟動持續監聽...');
+        _startContinuousListening();
+      } else {
+        debugPrint('⚠️ 跳過重新啟動：actuallyListening=$actuallyListening, _isRestarting=$_isRestarting, _isSpeaking=$_isSpeaking');
+      }
+    });
   }
   
   /// 停止語音喚醒模式

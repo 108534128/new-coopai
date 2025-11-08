@@ -13,9 +13,23 @@ from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
 
-# 資料庫配置
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:11368/cookpal'
+# 資料庫配置（優先使用環境變數，否則使用預設值）
+import os
+database_url = os.environ.get('DATABASE_URL') or 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:17485/cookpal'
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# 資料庫連接池配置，防止連接中斷
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_recycle': 3600,  # 1小時後回收連接
+    'pool_pre_ping': True,  # 使用前檢查連接是否有效
+    'pool_size': 10,  # 連接池大小
+    'max_overflow': 20,  # 最大溢出連接數
+    'connect_args': {
+        'connect_timeout': 10,  # 連接超時10秒
+        'read_timeout': 30,  # 讀取超時30秒
+        'write_timeout': 30,  # 寫入超時30秒
+    }
+}
 app.config['JWT_SECRET_KEY'] = 'your-secret-key-change-in-production'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
@@ -132,7 +146,7 @@ class History(db.Model):
 
 # 中間表定義
 recipe_ingredients = db.Table('recipe_ingredients',
-    db.Column('recipe_id', db.String(36), db.ForeignKey('recipes.id'), primary_key=True),
+    db.Column('recipe_id', db.String(36), db.ForeignKey('recipes.uid'), primary_key=True),
     db.Column('ingredient_id', db.String(36), db.ForeignKey('ingredients.id'), primary_key=True),
     db.Column('amount', db.String(50)),
     db.Column('created_at', db.DateTime, default=db.func.current_timestamp())
@@ -408,65 +422,120 @@ def logout():
 @jwt_required()
 def get_recipes():
     """獲取食譜列表"""
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 10, type=int)
 
-        # 先試著獲取所有食譜
-        query = Recipe.query.order_by(Recipe.created_at.desc())
-        
-        # 如果沒有食譜，創建一個示例食譜
-        if query.count() == 0:
-            import uuid
-            recipe = Recipe(
-                uid=str(uuid.uuid4()),
-                external_id='000001',
-                name='示例食譜：寶寶麥精銀耳湯',
-                ingredients='銀耳 30g,水 500ml',
-                tag='湯品',
-                porsi='2人份',
-                cook_minutes=30,
-                instructions='1. 將銀耳泡發,2. 加入水煮沸,3. 悶煮30分鐘即可',
-                image='https://tokyo-kitchen.icook.network/uploads/recipe/cover/479956/a296741a0c90c862.jpg',
-                likes=0
-            )
-            db.session.add(recipe)
-            db.session.commit()
+            # 使用更安全的查詢方式，避免 count() 導致長時間查詢
+            query = Recipe.query.order_by(Recipe.created_at.desc())
             
-            # 重新查詢
+            # 先獲取第一頁數據來檢查是否有食譜
+            first_page = query.limit(1).all()
+            
+            # 如果沒有食譜，創建一個示例食譜
+            if not first_page:
+                try:
+                    import uuid
+                    recipe = Recipe(
+                        uid=str(uuid.uuid4()),
+                        external_id='000001',
+                        name='示例食譜：寶寶麥精銀耳湯',
+                        ingredients='銀耳 30g,水 500ml',
+                        tag='湯品',
+                        porsi='2人份',
+                        cook_minutes=30,
+                        instructions='1. 將銀耳泡發,2. 加入水煮沸,3. 悶煮30分鐘即可',
+                        image='https://tokyo-kitchen.icook.network/uploads/recipe/cover/479956/a296741a0c90c862.jpg',
+                        likes=0
+                    )
+                    db.session.add(recipe)
+                    db.session.commit()
+                except Exception as commit_error:
+                    db.session.rollback()
+                    print(f"創建示例食譜失敗: {commit_error}")
+            
+            # 重新獲取查詢
             query = Recipe.query.order_by(Recipe.created_at.desc())
 
-        # 使用分頁
-        try:
-            pagination = query.paginate(
-                page=page,
-                per_page=per_page,
-                error_out=False
-            )
-        except TypeError:
-            # 舊版 SQLAlchemy 的寫法
-            pagination = query.paginate(
-                page,
-                per_page,
-                False
-            )
+            # 使用分頁，但先獲取總數（使用更安全的方式）
+            try:
+                # 先獲取總數（使用更快的查詢）
+                total = db.session.query(db.func.count(Recipe.uid)).scalar() or 0
+                
+                # 計算分頁
+                offset = (page - 1) * per_page
+                recipes = query.offset(offset).limit(per_page).all()
+                
+                pages = (total + per_page - 1) // per_page if total > 0 else 1
+                
+            except Exception as pagination_error:
+                # 如果分頁失敗，嘗試使用舊方法
+                try:
+                    pagination = query.paginate(
+                        page=page,
+                        per_page=per_page,
+                        error_out=False
+                    )
+                    recipes = pagination.items
+                    total = pagination.total
+                    pages = pagination.pages
+                except TypeError:
+                    # 舊版 SQLAlchemy 的寫法
+                    pagination = query.paginate(
+                        page,
+                        per_page,
+                        False
+                    )
+                    recipes = pagination.items
+                    total = pagination.total
+                    pages = pagination.pages
 
-        return jsonify({
-            'status': 'success',
-            'recipes': [recipe.to_dict() for recipe in pagination.items],
-            'total': pagination.total,
-            'pages': pagination.pages,
-            'current_page': page,
-        }), 200
+            return jsonify({
+                'status': 'success',
+                'recipes': [recipe.to_dict() for recipe in recipes],
+                'total': total,
+                'pages': pages,
+                'current_page': page,
+            }), 200
 
-    except Exception as e:
-        import traceback
-        print(f"錯誤：{str(e)}")
-        print(f"詳細錯誤：{traceback.format_exc()}")
-        return jsonify({
-            'error': '獲取食譜列表失敗',
-            'message': str(e)
-        }), 500
+        except Exception as e:
+            retry_count += 1
+            import traceback
+            error_msg = str(e)
+            print(f"錯誤（嘗試 {retry_count}/{max_retries}）：{error_msg}")
+            print(f"詳細錯誤：{traceback.format_exc()}")
+            
+            # 如果是連接錯誤，嘗試重新連接
+            if 'Lost connection' in error_msg or 'OperationalError' in error_msg:
+                try:
+                    db.session.rollback()
+                    db.session.close()
+                    # 重新初始化連接
+                    db.session.execute(db.text('SELECT 1'))
+                except:
+                    pass
+                
+                if retry_count < max_retries:
+                    import time
+                    time.sleep(1)  # 等待1秒後重試
+                    continue
+            
+            # 如果重試次數用完或不是連接錯誤，返回錯誤
+            return jsonify({
+                'error': '獲取食譜列表失敗',
+                'message': error_msg,
+                'retry_count': retry_count
+            }), 500
+    
+    # 所有重試都失敗
+    return jsonify({
+        'error': '獲取食譜列表失敗',
+        'message': '資料庫連接失敗，請稍後再試'
+    }), 500
 
 
 # ==================== 搜尋功能 API ====================

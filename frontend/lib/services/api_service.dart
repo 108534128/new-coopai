@@ -16,6 +16,13 @@ class ApiService {
   static Future<List<String>> _getPossibleHosts() async {
     List<String> hosts = [];
     
+    // 優先添加當前電腦的常見 IP（最可能正確的地址）
+    hosts.addAll([
+      '192.168.0.196:5000',   // 當前電腦 IP（最優先）
+      '192.168.0.100:5000',   // 常見範圍
+      '192.168.1.100:5000',   // 另一個常見範圍
+    ]);
+    
     try {
       if (!kIsWeb) {
         // 獲取本機所有網路介面
@@ -24,8 +31,12 @@ class ApiService {
         for (final interface in interfaces) {
           for (final addr in interface.addresses) {
             if (!addr.isLoopback && addr.type == InternetAddressType.IPv4) {
-              hosts.add('${addr.address}:5000');
-              debugPrint('🔍 發現網路介面 ${interface.name}: ${addr.address}');
+              final host = '${addr.address}:5000';
+              // 只添加不在列表中的地址（避免重複）
+              if (!hosts.contains(host)) {
+                hosts.add(host);
+                debugPrint('🔍 發現網路介面 ${interface.name}: ${addr.address}');
+              }
             }
           }
         }
@@ -34,12 +45,19 @@ class ApiService {
       debugPrint('⚠️ 無法獲取網路介面: $e');
     }
     
-    // 添加常見的後備地址
+    // 添加其他常見的後備地址（掃描常見的區域網路 IP 範圍）
+    // 掃描 192.168.0.x 和 192.168.1.x 網段的常見範圍
+    for (int i = 101; i <= 199; i++) {
+      if (i != 196) { // 跳過已經添加的 196
+        hosts.add('192.168.0.$i:5000');
+        hosts.add('192.168.1.$i:5000');
+      }
+    }
+    
+    // 添加其他常見地址
     hosts.addAll([
-      '192.168.1.100:5000',  // 常見的區域網路 IP 範圍
-      '192.168.0.100:5000',  // 另一個常見範圍  
-      '192.168.1.1:5000',    // 路由器 IP 範圍
-      '192.168.0.1:5000',    // 另一個路由器 IP
+      '192.168.0.1:5000',    // 路由器
+      '192.168.1.1:5000',    // 路由器
       '10.0.2.2:5000',       // Android 模擬器
       'localhost:5000',      // 本機
     ]);
@@ -65,8 +83,19 @@ class ApiService {
     }
 
     if (kIsWeb) {
-      const url = 'http://localhost:5000/api';
-      debugPrint('🌐 使用 Web API 地址: $url');
+      // Web 版本：嘗試使用當前頁面的主機名，如果是手機訪問則使用電腦 IP
+      // 如果從手機訪問，需要手動設置電腦的 IP 地址
+      // 例如：如果電腦 IP 是 192.168.0.196，則使用 http://192.168.0.196:5000/api
+      final host = Uri.base.host;
+      String url;
+      if (host.isEmpty || host == 'localhost' || host == '127.0.0.1') {
+        // 如果是從電腦訪問，使用 localhost
+        url = 'http://localhost:5000/api';
+      } else {
+        // 如果是從手機訪問（通過 IP），使用相同的 IP
+        url = 'http://$host:5000/api';
+      }
+      debugPrint('🌐 使用 Web API 地址: $url (host: $host)');
       return url;
     }
     

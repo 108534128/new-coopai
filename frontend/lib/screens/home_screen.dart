@@ -171,8 +171,18 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
           appBar: AppBar(
-            title: const Text('智慧食材辨識與食譜推薦'),
+            elevation: 0,
+            backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
+            foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+            title: const Text(
+              '智慧食材辨識與食譜推薦',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.person),
@@ -204,6 +214,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           body: _buildBody(),
           bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: const Color(0xFFFAFAFA),
+            selectedItemColor: const Color(0xFFB3D9E8), // 稍微深一點的淺藍色
+            unselectedItemColor: const Color(0xFF757575),
+            selectedIconTheme: const IconThemeData(color: Color(0xFFB3D9E8)),
+            selectedLabelStyle: const TextStyle(color: Color(0xFFB3D9E8)),
             currentIndex: _selectedIndex,
             onTap: (index) {
               setState(() {
@@ -211,7 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: Colors.green,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.home),
@@ -252,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,29 +274,53 @@ class _HomeScreenState extends State<HomeScreen> {
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '歡迎回來！',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.05),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        const Color(0xFFFAFAFA),
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '歡迎回來！',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: const Color(0xFF93939B),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${authProvider.user?.name ?? authProvider.user?.account}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '開始探索美味的食譜吧！',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Text(
+                          '${authProvider.user?.name ?? authProvider.user?.account}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: const Color(0xFF2C3E50),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '開始探索美味的食譜吧！',
+                          style: TextStyle(
+                            color: Color(0xFF757575),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -295,6 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
             '快速功能',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
+              color: const Color(0xFF2C3E50),
             ),
           ),
           const SizedBox(height: 16),
@@ -378,36 +417,63 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
   }) {
     return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: Colors.green,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                const Color(0xFFFAFAFA),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 32,
+                    color: const Color(0xFFE1D6DA),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF2C3E50),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF757575),
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -450,7 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // 搜尋框和篩選按鈕
         Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           color: Colors.white,
           child: Column(
             children: [
@@ -460,20 +526,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: TextField(
                       controller: _searchController,
+                      style: const TextStyle(fontSize: 14), // 縮小字體
                       decoration: InputDecoration(
                         hintText: '搜尋食譜名稱、食材...',
-                        prefixIcon: const Icon(Icons.search),
+                        hintStyle: const TextStyle(fontSize: 14), // 縮小提示文字
+                        prefixIcon: const Icon(Icons.search, size: 20), // 縮小圖標
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 44, // 增加圖標區域寬度，讓圖標往右移動
+                          minHeight: 36,
+                        ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear),
+                                icon: const Icon(Icons.clear, size: 20), // 縮小圖標
                                 onPressed: _clearSearch,
+                                padding: EdgeInsets.zero, // 減少按鈕內邊距
+                                constraints: const BoxConstraints(), // 移除最小尺寸限制
                               )
                             : null,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(20), // 稍微縮小圓角
+                          borderSide: BorderSide.none, // 無邊框線
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20), // 稍微縮小圓角
+                          borderSide: BorderSide.none, // 無邊框線
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20), // 稍微縮小圓角
+                          borderSide: BorderSide.none, // 無邊框線
                         ),
                         filled: true,
                         fillColor: Colors.grey[100],
+                        isDense: true, // 讓輸入框更緊湊
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // 減少水平內邊距，讓圖標和文字更靠近
                       ),
                       onChanged: (value) {
                         setState(() {}); // 更新 UI 顯示清除按鈕
@@ -486,10 +571,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 8),
                   // 搜尋按鈕
                   IconButton(
-                    icon: const Icon(Icons.search, color: Colors.green),
+                    icon: const Icon(Icons.search, color: Color(0xFF949EC5), size: 20),
                     onPressed: _performSearch,
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.green[50],
+                      backgroundColor: _selectedTags.isNotEmpty 
+                          ? Colors.green[50] 
+                          : Colors.grey[100], // 與篩選按鈕相同的背景色
+                      padding: const EdgeInsets.all(8), // 縮小按鈕內邊距
+                      minimumSize: const Size(36, 36), // 縮小按鈕最小尺寸
                     ),
                   ),
                   // 篩選按鈕
@@ -497,6 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icon(
                       _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
                       color: _selectedTags.isNotEmpty ? Colors.green : Colors.grey,
+                      size: 20,
                     ),
                     onPressed: () {
                       setState(() {
@@ -507,6 +597,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       backgroundColor: _selectedTags.isNotEmpty 
                           ? Colors.green[50] 
                           : Colors.grey[100],
+                      padding: const EdgeInsets.all(8), // 縮小按鈕內邊距
+                      minimumSize: const Size(36, 36), // 縮小按鈕最小尺寸
                     ),
                   ),
                 ],

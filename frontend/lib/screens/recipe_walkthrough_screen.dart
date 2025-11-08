@@ -343,15 +343,25 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
     final steps = _steps;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
-        title: Text('${widget.recipe.name} 步驟'),
+        elevation: 0,
+        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
+        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        title: Text(
+          '${widget.recipe.name} 步驟',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
+          ),
+        ),
         actions: [
           // TTS 按鈕
           IconButton(
             onPressed: _isVoiceEnabled ? null : _toggleTTS,
             icon: Icon(
               _isVoiceEnabled ? Icons.volume_up : Icons.volume_off,
-              color: _isVoiceEnabled ? Colors.green : null,
+              color: _isVoiceEnabled ? const Color(0xFF6BCB9F) : const Color(0xFF95A5A6),
             ),
             tooltip: '語音朗讀步驟',
           ),
@@ -360,7 +370,7 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
             onPressed: _toggleVoiceControl,
             icon: Icon(
               _voiceService.isWakeModeActive ? Icons.mic : Icons.mic_off,
-              color: _voiceService.isWakeModeActive ? Colors.red : null,
+              color: _voiceService.isWakeModeActive ? const Color(0xFFFF9A9E) : const Color(0xFF95A5A6),
             ),
             tooltip: '語音控制',
           ),
@@ -394,12 +404,29 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                     itemBuilder: (context, index) {
                       final step = steps[index];
                       return Padding(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Card(
-                          elevation: 3,
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
+                          elevation: 2,
+                          shadowColor: Colors.black.withOpacity(0.05),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          color: Colors.white,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(24),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white,
+                                  const Color(0xFFFAFAFA),
+                                ],
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
@@ -408,45 +435,65 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                       '步驟 ${index + 1}',
                                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                             fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF2C3E50),
                                           ),
                                     ),
                                     const Spacer(),
                                     // 語音狀態指示器
                                     if (_voiceService.isSpeaking && _currentPage == index)
-                                      const Row(
-                                        children: [
-                                          Icon(
-                                            Icons.volume_up,
-                                            color: Colors.blue,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            '朗讀中...',
-                                            style: TextStyle(
-                                              color: Colors.blue,
-                                              fontSize: 12,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFE3F2FD),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.volume_up,
+                                              color: Color(0xFF64B5F6),
+                                              size: 16,
                                             ),
-                                          ),
-                                        ],
+                                            SizedBox(width: 4),
+                                            Text(
+                                              '朗讀中...',
+                                              style: TextStyle(
+                                                color: Color(0xFF1976D2),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     if (_voiceService.isWakeModeActive)
-                                      const Row(
-                                        children: [
-                                          Icon(
-                                            Icons.mic,
-                                            color: Colors.red,
-                                            size: 16,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            '語音控制',
-                                            style: TextStyle(
-                                              color: Colors.red,
-                                              fontSize: 10,
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 8),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFEBEE),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.mic,
+                                              color: Color(0xFFFF9A9E),
+                                              size: 14,
                                             ),
-                                          ),
-                                        ],
+                                            SizedBox(width: 4),
+                                            Text(
+                                              '語音控制',
+                                              style: TextStyle(
+                                                color: Color(0xFFE91E63),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                   ],
                                 ),
@@ -456,70 +503,99 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          step,
-                                          style: Theme.of(context).textTheme.bodyLarge,
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFAFAFA),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: const Color(0xFFE0E0E0).withOpacity(0.5),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            step,
+                                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                              height: 1.6,
+                                              color: const Color(0xFF424242),
+                                            ),
+                                          ),
                                         ),
                                         const SizedBox(height: 16),
                                         // 語音控制區域
                                         if (index == _currentPage) ...[
                                           Container(
                                             decoration: BoxDecoration(
-                                              color: Colors.blue.shade50,
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(0xFFFAFAFA),
+                                              borderRadius: BorderRadius.circular(16),
                                               border: Border.all(
-                                                color: Colors.blue.shade100,
+                                                color: const Color(0xFFE0E0E0).withOpacity(0.5),
                                                 width: 1,
                                               ),
                                             ),
-                                            padding: const EdgeInsets.all(12),
+                                            padding: const EdgeInsets.all(16),
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Row(
                                                   children: [
-                                                    const Icon(
-                                                      Icons.record_voice_over,
-                                                      color: Colors.blue,
-                                                      size: 20,
+                                                    Container(
+                                                      padding: const EdgeInsets.all(6),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF64B5F6).withOpacity(0.2),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.record_voice_over,
+                                                        color: Colors.black,
+                                                        size: 18,
+                                                      ),
                                                     ),
-                                                    const SizedBox(width: 8),
+                                                    const SizedBox(width: 10),
                                                     Text(
                                                       '語音功能',
                                                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                        color: Colors.blue.shade700,
-                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.black,
+                                                        fontWeight: FontWeight.w600,
                                                       ),
                                                     ),
                                                   ],
                                                 ),
-                                                const SizedBox(height: 8),
+                                                const SizedBox(height: 12),
                                                 Wrap(
                                                   spacing: 8,
+                                                  runSpacing: 8,
                                                   children: [
                                                     ElevatedButton.icon(
                                                       onPressed: () => _speakCurrentStep(),
                                                       icon: const Icon(Icons.volume_up, size: 16),
                                                       label: const Text('朗讀步驟', style: TextStyle(fontSize: 12)),
                                                       style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.blue,
-                                                        foregroundColor: Colors.white,
-                                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                        minimumSize: const Size(0, 32),
+                                                        backgroundColor: const Color(0xFFE0F2F1), // 淺青色
+                                                        foregroundColor: const Color(0xFF004D40), // 深青色文字
+                                                        elevation: 0,
+                                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                        minimumSize: const Size(0, 36),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(10),
+                                                        ),
                                                       ),
                                                     ),
                                                     if (_voiceService.isWakeModeActive)
                                                       Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                                         decoration: BoxDecoration(
-                                                          color: Colors.green.shade100,
-                                                          borderRadius: BorderRadius.circular(16),
+                                                          color: const Color(0xFFE8F5E9),
+                                                          borderRadius: BorderRadius.circular(12),
+                                                          border: Border.all(
+                                                            color: const Color(0xFF81C784).withOpacity(0.3),
+                                                          ),
                                                         ),
                                                         child: const Text(
                                                           '可說「下一步」「上一步」「重複」',
                                                           style: TextStyle(
-                                                            fontSize: 10,
-                                                            color: Colors.green,
+                                                            fontSize: 11,
+                                                            color: Color(0xFF4CAF50),
+                                                            fontWeight: FontWeight.w500,
                                                           ),
                                                         ),
                                                       ),
@@ -529,10 +605,14 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                                       icon: const Icon(Icons.bug_report, size: 16),
                                                       label: const Text('測試語音', style: TextStyle(fontSize: 12)),
                                                       style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.orange,
-                                                        foregroundColor: Colors.white,
-                                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                        minimumSize: const Size(0, 32),
+                                                        backgroundColor: const Color(0xFFFFF3E0), // 淺米色
+                                                        foregroundColor: const Color(0xFFBF360C), // 深橙色文字
+                                                        elevation: 0,
+                                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                                        minimumSize: const Size(0, 36),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(10),
+                                                        ),
                                                       ),
                                                     ),
                                                   ],
@@ -545,12 +625,26 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                         if (_parseMinutes(step) != null) ...[
                                           Container(
                                             decoration: BoxDecoration(
-                                              color: Colors.green.shade50,
-                                              borderRadius: BorderRadius.circular(8),
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  const Color(0xFFE8F5E9),
+                                                  const Color(0xFFF1F8E9),
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              borderRadius: BorderRadius.circular(16),
                                               border: Border.all(
-                                                color: Colors.green.shade100,
+                                                color: const Color(0xFFA5D6A7).withOpacity(0.4),
                                                 width: 1,
                                               ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.green.withOpacity(0.05),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
                                             ),
                                             padding: const EdgeInsets.all(16),
                                             child: Column(
@@ -558,24 +652,33 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                               children: [
                                                 Row(
                                                   children: [
-                                                    const Icon(
-                                                      Icons.timer_outlined,
-                                                      color: Colors.green,
+                                                    Container(
+                                                      padding: const EdgeInsets.all(6),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF81C784).withOpacity(0.2),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.timer_outlined,
+                                                        color: Color(0xFF4CAF50),
+                                                        size: 20,
+                                                      ),
                                                     ),
-                                                    const SizedBox(width: 8),
+                                                    const SizedBox(width: 10),
                                                     if (_isTimerRunning || _isTimerPaused)
                                                       Text(
                                                         '剩餘時間: ${_remainingSeconds ~/ 60}:${(_remainingSeconds % 60).toString().padLeft(2, '0')}',
                                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                          color: Colors.green.shade700,
-                                                          fontWeight: FontWeight.bold,
+                                                          color: const Color(0xFF2E7D32),
+                                                          fontWeight: FontWeight.w600,
                                                         ),
                                                       )
                                                     else
                                                       Text(
                                                         '需要 ${_parseMinutes(step)} 分鐘',
                                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                          color: Colors.green.shade700,
+                                                          color: const Color(0xFF2E7D32),
+                                                          fontWeight: FontWeight.w500,
                                                         ),
                                                       ),
                                                   ],
@@ -586,43 +689,63 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                                     mainAxisSize: MainAxisSize.min,
                                                     children: [
                                                       if (_isTimerRunning && !_isPlayingEndSound && _remainingSeconds > 0) ...[
-                                                  if (_isTimerPaused)
-                                                    ElevatedButton.icon(
-                                                      onPressed: _resumeTimer,
-                                                      icon: const Icon(Icons.play_arrow),
-                                                      label: const Text('繼續'),
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.green,
+                                                        if (_isTimerPaused)
+                                                          ElevatedButton.icon(
+                                                            onPressed: _resumeTimer,
+                                                            icon: const Icon(Icons.play_arrow, size: 18),
+                                                            label: const Text('繼續'),
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor: const Color(0xFF66BB6A),
+                                                              foregroundColor: Colors.white,
+                                                              elevation: 0,
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius: BorderRadius.circular(10),
+                                                              ),
+                                                            ),
+                                                          )
+                                                        else
+                                                          ElevatedButton.icon(
+                                                            onPressed: _pauseTimer,
+                                                            icon: const Icon(Icons.pause, size: 18),
+                                                            label: const Text('暫停'),
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor: const Color(0xFFFFB74D),
+                                                              foregroundColor: Colors.white,
+                                                              elevation: 0,
+                                                              shape: RoundedRectangleBorder(
+                                                                borderRadius: BorderRadius.circular(10),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        const SizedBox(width: 8),
+                                                      ],
+                                                      ElevatedButton.icon(
+                                                        onPressed: _stopTimer,
+                                                        icon: const Icon(Icons.stop, size: 18),
+                                                        label: const Text('停止'),
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: const Color(0xFFEF5350),
+                                                          foregroundColor: Colors.white,
+                                                          elevation: 0,
+                                                          shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(10),
+                                                          ),
+                                                        ),
                                                       ),
-                                                    )
-                                                  else
-                                                    ElevatedButton.icon(
-                                                      onPressed: _pauseTimer,
-                                                      icon: const Icon(Icons.pause),
-                                                      label: const Text('暫停'),
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.orange,
-                                                      ),
-                                                    ),
-                                                  const SizedBox(width: 8),
-                                                ],
-                                                ElevatedButton.icon(
-                                                  onPressed: _stopTimer,
-                                                  icon: const Icon(Icons.stop),
-                                                  label: const Text('停止'),
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                ),
                                                     ],
                                                   ),
                                                 ] else ...[
                                                   ElevatedButton.icon(
                                                     onPressed: () => _startTimer(_parseMinutes(step)!),
-                                                    icon: const Icon(Icons.timer),
+                                                    icon: const Icon(Icons.timer, size: 18),
                                                     label: const Text('開始計時'),
                                                     style: ElevatedButton.styleFrom(
-                                                      backgroundColor: Colors.green,
+                                                      backgroundColor: const Color(0xFF66BB6A),
+                                                      foregroundColor: Colors.white,
+                                                      elevation: 0,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(10),
+                                                      ),
                                                     ),
                                                   ),
                                                 ],
@@ -636,6 +759,7 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                                 ),
                               ],
                             ),
+                          ),
                           ),
                         ),
                       );
@@ -661,28 +785,45 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                     if (_voiceService.isWakeModeActive) ...[
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.shade300),
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFFFEBEE),
+                              const Color(0xFFFFF3E0),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFFF9A9E).withOpacity(0.3),
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.mic,
-                              color: Colors.green.shade700,
-                              size: 16,
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF9A9E).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.mic,
+                                color: Color(0xFFE91E63),
+                                size: 18,
+                              ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _voiceService.isCommandModeActive
                                     ? '🎤 正在聆聽指令...'
                                     : '🎤 語音控制啟動中，請說「嘿廚師」開始',
-                                style: TextStyle(
-                                  color: Colors.green.shade700,
-                                  fontSize: 12,
+                                style: const TextStyle(
+                                  color: Color(0xFFC2185B),
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -690,7 +831,7 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                     ],
                     // 主要按鈕
                     Row(
@@ -700,20 +841,50 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _handlePrevious,
-                              icon: const Icon(Icons.arrow_back, size: 16),
+                              icon: const Icon(Icons.arrow_back, size: 18),
                               label: const Text('上一步'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey.shade600,
+                                backgroundColor: const Color(0xFFB0BEC5),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ),
-                        if (_currentPage > 0) const SizedBox(width: 8),
+                        if (_currentPage > 0) const SizedBox(width: 12),
                         // 下一步/完成按鈕
                         Expanded(
-                          flex: 2,
                           child: ElevatedButton(
                             onPressed: () => _handleNext(context),
-                            child: Text(_currentPage == steps.length - 1 ? '完成' : '下一步'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFDCD7ED), // 淺紫色
+                              foregroundColor: Colors.white, // 白色文字
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _currentPage == steps.length - 1 ? '完成' : '下一步',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  _currentPage == steps.length - 1 ? Icons.check_circle : Icons.arrow_forward,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -761,18 +932,50 @@ class _StepIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     if (total <= 0) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFE0E0E0),
+          width: 1,
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '第 ${current + 1} / $total 步',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F4F8),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Text(
+                  '第 ${current + 1} / $total 步',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2C3E50),
+                      ),
+                ),
+              ),
+            ],
           ),
-          const Icon(Icons.swipe_up_alt_outlined),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.swipe_up_alt_outlined,
+              color: Color(0xFF90A4AE),
+              size: 20,
+            ),
+          ),
         ],
       ),
     );

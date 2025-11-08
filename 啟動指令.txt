@@ -1,26 +1,39 @@
-智慧食材辨識與食譜推薦系統 - 啟動指令
-
 === 後端啟動 ===
-1. 開啟命令提示字元
-2. 輸入：cd /d E:\Users\acer\Desktop\新專題\backend
-3. 輸入：python run.py
-4. 看到 "Running on http://127.0.0.1:5000" 表示成功
+cd /d E:\Users\acer\Desktop\newproct\backend
+python run.py
 
-=== 前端啟動 ===11
-1. 開啟新的命令提示字元
-2. 輸入：cd /d E:\Users\acer\Desktop\新專題\frontend
-3. 輸入：flutter run -d chrome
-4. 會自動開啟瀏覽器顯示登入界面
+=== 前端啟動（瀏覽器）===
+cd /d E:\Users\acer\Desktop\newproct\frontend
+flutter pub get
+flutter run -d chrome
 
-=== 測試帳戶 ===
-用戶名：testuser
-密碼：password123
+=== 前端啟動（手機 USB）===
+cd /d E:\Users\acer\Desktop\newproct\frontend
+flutter pub get
+flutter run
 
-=== 注意事項 ===
-- 後端必須先啟動
-- 兩個命令提示字元都要保持運行
-- 如果遇到錯誤，請檢查 MySQL 服務是否運行
+=== 前端啟動（手機 Web）===
+cd /d E:\Users\acer\Desktop\newproct\frontend
+flutter pub get
+flutter run -d chrome --web-hostname 0.0.0.0 --web-port 8080
+手機瀏覽器訪問：http://電腦IP:8080
 
-終於用好了...
->>>>>>> 2eed532436b97e3d8f0043dcca6789d67b828400
-abc
+=== 構建 Android APK ===
+cd /d E:\Users\acer\Desktop\newproct\frontend
+set GRADLE_USER_HOME=E:\.gradle
+flutter pub get
+flutter build apk --debug
+APK位置：build\app\outputs\flutter-apk\app-debug.apk
+
+=== 查看電腦 IP ===
+ipconfig | findstr /i "IPv4"
+
+=== 檢查連接設備 ===
+cd /d E:\Users\acer\Desktop\newproct\frontend
+flutter devices
+
+=== 資料庫連接問題 ===
+如果出現資料庫連接錯誤，請：
+1. 確認 ngrok 隧道正在運行（如果使用 ngrok）
+2. 或修改 backend/app.py 中的資料庫連接字串
+3. 或創建 backend/.env 文件設置 DATABASE_URL

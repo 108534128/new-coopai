@@ -91,24 +91,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
-        title: const Text('歷史紀錄'),
+        elevation: 0,
+        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
+        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        title: const Text(
+          '歷史紀錄',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
+          ),
+        ),
         actions: [
           if (history.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep),
+              icon: const Icon(Icons.delete_sweep, color: Color(0xFF2C3E50)),
               tooltip: '清空歷史',
               onPressed: _showClearAllDialog,
             ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Color(0xFF2C3E50)),
             tooltip: '重新整理',
             onPressed: _loadHistory,
           ),
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF64B5F6),
+              ),
+            )
           : history.isEmpty
               ? _buildEmptyState()
               : _buildHistoryList(),
@@ -120,16 +134,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.history, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F4F8).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: const Icon(
+              Icons.history,
+              size: 60,
+              color: Color(0xFF8C9BA6),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
             '還沒有瀏覽紀錄',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 18,
+              color: Color(0xFF424242),
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             '瀏覽過的食譜會顯示在這裡',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
@@ -140,14 +172,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: Color(0xFF8C9BA6),
+                ),
+              ),
               const SizedBox(width: 8),
               Text(
                 '共 ${history.length} 筆紀錄 · 左滑可刪除',
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF424242),
+                ),
               ),
             ],
           ),
@@ -155,9 +201,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadHistory,
+            color: const Color(0xFF64B5F6),
             child: ListView.builder(
               itemCount: history.length,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               itemBuilder: (context, index) {
                 final item = history[index];
                 return _buildHistoryCard(item, index);
@@ -219,67 +266,116 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _deleteHistoryItem(item['history_uid'], index);
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        margin: const EdgeInsets.only(bottom: 12),
         elevation: 2,
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(12),
-          leading: _buildRecipeImage(item['image']),
-          title: Text(
-            item['name'] ?? '未命名食譜',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+        shadowColor: Colors.black.withOpacity(0.05),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                const Color(0xFFFAFAFA),
+              ],
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatTime(item['search_time']),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: _buildRecipeImage(item['image']),
+            title: Text(
+              item['name'] ?? '未命名食譜',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF2C3E50),
               ),
-              if (item['tag'] != null && item['tag'].toString().isNotEmpty)
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.label, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        item['tag'],
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.access_time,
+                        size: 12,
+                        color: Color(0xFF8C9BA6),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _formatTime(item['search_time']),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF424242),
                       ),
                     ),
                   ],
                 ),
-            ],
+                if (item['tag'] != null && item['tag'].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.label,
+                            size: 12,
+                            color: Color(0xFF8C9BA6),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            item['tag'],
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF424242),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            onTap: () {
+              try {
+                final recipeObj = Recipe.fromJson(item);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecipeDetailScreen(recipe: recipeObj),
+                  ),
+                ).then((_) => _loadHistory());
+              } catch (e) {
+                print('轉換 Recipe 錯誤: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('無法開啟食譜詳情')),
+                );
+              }
+            },
           ),
-          onTap: () {
-            try {
-              final recipeObj = Recipe.fromJson(item);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RecipeDetailScreen(recipe: recipeObj),
-                ),
-              ).then((_) => _loadHistory());
-            } catch (e) {
-              print('轉換 Recipe 錯誤: $e');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('無法開啟食譜詳情')),
-              );
-            }
-          },
         ),
       ),
     );
@@ -297,10 +393,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
         width: 70,
         height: 70,
         decoration: BoxDecoration(
-          color: Colors.grey[300],
-          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFE0E0E0),
+              const Color(0xFFF5F5F5),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: const Icon(Icons.restaurant, size: 35),
+        child: const Icon(
+          Icons.restaurant,
+          size: 35,
+          color: Color(0xFFB0BEC5),
+        ),
       );
     }
 
@@ -315,7 +422,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Image.network(
         finalImageUrl,
         width: 70,
@@ -327,8 +434,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return Container(
             width: 70,
             height: 70,
-            color: Colors.grey[300],
-            child: Icon(Icons.restaurant, size: 35, color: Colors.grey[600]),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFE0E0E0),
+                  const Color(0xFFF5F5F5),
+                ],
+              ),
+            ),
+            child: const Icon(
+              Icons.restaurant,
+              size: 35,
+              color: Color(0xFFB0BEC5),
+            ),
           );
         },
         loadingBuilder: (context, child, loadingProgress) {
@@ -339,9 +459,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
           return Container(
             width: 70,
             height: 70,
-            color: Colors.grey[200],
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFE0E0E0),
+                  const Color(0xFFF5F5F5),
+                ],
+              ),
+            ),
             child: const Center(
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFF64B5F6),
+              ),
             ),
           );
         },
