@@ -15,7 +15,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
-  final _emailController = TextEditingController();
   bool _isEditing = false;
 
   @override
@@ -29,7 +28,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _fullNameController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -37,17 +35,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.user != null) {
       _fullNameController.text = authProvider.user!.name ?? '';
-      _emailController.text = authProvider.user!.account;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
-        title: const Text('個人資料'),
+        elevation: 0,
+        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
+        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        title: const Text(
+          '個人資料',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF2C3E50),
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2C3E50)),
           onPressed: () => context.go('/home'),
         ),
         actions: [
@@ -61,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: const Text(
                 '編輯',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Color(0xFF2C3E50)),
               ),
             )
           else
@@ -69,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: _cancelEdit,
               child: const Text(
                 '取消',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Color(0xFF2C3E50)),
               ),
             ),
         ],
@@ -78,7 +85,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (context, authProvider, child) {
           if (authProvider.isLoading) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: Color(0xFF64B5F6),
+              ),
             );
           }
 
@@ -99,11 +108,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Center(
                     child: CircleAvatar(
                       radius: 50,
-                      backgroundColor: Colors.green.shade100,
-                      child: Icon(
+                      backgroundColor: const Color(0xFFB0BEC5).withOpacity(0.3), // 比上一步按鈕更淺的底色
+                      child: const Icon(
                         Icons.person,
                         size: 50,
-                        color: Colors.green,
+                        color: Color(0xFFB0BEC5), // 與上一步按鈕相同的顏色
                       ),
                     ),
                   ),
@@ -111,24 +120,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   // 用戶名（不可編輯）
                   Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '用戶名',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            const Color(0xFFFAFAFA),
+                          ],
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '用戶名',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF757575),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            authProvider.user!.account,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              authProvider.user!.account,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF424242),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -136,73 +166,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   // 姓名
                   Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '姓名',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            const Color(0xFFFAFAFA),
+                          ],
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '姓名',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF757575),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (_isEditing)
-                            CustomTextField(
-                              controller: _fullNameController,
-                              labelText: '姓名',
-                              prefixIcon: Icons.badge,
-                            )
-                          else
-                            Text(
-                              authProvider.user!.name ?? '未設定',
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                        ],
+                            const SizedBox(height: 8),
+                            if (_isEditing)
+                              CustomTextField(
+                                controller: _fullNameController,
+                                labelText: '姓名',
+                                prefixIcon: Icons.badge,
+                              )
+                            else
+                              Text(
+                                authProvider.user!.name ?? '未設定',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFF424242),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // 電子郵件
+                  // 帳號
                   Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '電子郵件',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            const Color(0xFFFAFAFA),
+                          ],
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '帳號',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF757575),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (_isEditing)
-                            CustomTextField(
-                              controller: _emailController,
-                              labelText: '電子郵件',
-                              prefixIcon: Icons.email,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return '請輸入電子郵件';
-                                }
-                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                  return '請輸入有效的電子郵件地址';
-                                }
-                                return null;
-                              },
-                            )
-                          else
+                            const SizedBox(height: 8),
                             Text(
                               authProvider.user!.account,
-                              style: const TextStyle(fontSize: 16),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF424242),
+                              ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -210,29 +265,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   // 註冊時間
                   Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '註冊時間',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey,
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            const Color(0xFFFAFAFA),
+                          ],
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '註冊時間',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF757575),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            authProvider.user!.createdAt != null
-                                ? DateTime.parse(authProvider.user!.createdAt!)
-                                    .toLocal()
-                                    .toString()
-                                    .split('.')[0]
-                                : '未知',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(
+                              authProvider.user!.createdAt != null
+                                  ? DateTime.parse(authProvider.user!.createdAt!)
+                                      .toLocal()
+                                      .toString()
+                                      .split('.')[0]
+                                  : '未知',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF424242),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -313,7 +389,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       name: _fullNameController.text.trim().isEmpty 
           ? null 
           : _fullNameController.text.trim(),
-      account: _emailController.text.trim(),
     );
 
     if (success && mounted) {

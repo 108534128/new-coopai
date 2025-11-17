@@ -43,6 +43,13 @@ dependencies:
   
   # 權限管理
   permission_handler: ^11.0.1
+  
+  # 音效播放
+  audioplayers: ^5.2.0
+  
+  # 語音功能
+  flutter_tts: ^3.8.5
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +63,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/sounds/
   
   # 字體配置（暫時移除，使用系統預設字體）
   # fonts:

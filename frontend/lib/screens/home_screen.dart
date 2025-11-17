@@ -1,7 +1,14 @@
+// frontend/lib/screens/home_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../models/recipe.dart';
+import '../widgets/recipe_card.dart';
+import '../services/api_service.dart';
+import '../screens/favorites_screen.dart';
+import '../screens/history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,14 +19,132 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final ApiService _apiService = ApiService();
+  List<Recipe> _recipes = [];
+  bool _isLoading = false;
+  String? _error;
+  
+  // ===== 新增：搜尋相關變數 =====
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _categories = [];
+  List<Map<String, dynamic>> _allKeywords = [];
+  List<String> _selectedTags = [];
+  bool _showFilters = false;
 
   @override
   void initState() {
     super.initState();
-    // 檢查登入狀態
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AuthProvider>(context, listen: false).checkLoginStatus();
+      _loadRecipes();
+      _loadCategories(); // 新增：載入分類和關鍵字
     });
+  }
+  
+  @override
+  void dispose() {
+    _searchController.dispose(); // 新增：釋放資源
+    super.dispose();
+  }
+
+  Future<void> _loadRecipes() async {
+    if (_isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final recipes = await _apiService.getRecipes();
+      setState(() {
+        _recipes = recipes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // ===== 新增：載入分類和關鍵字 =====
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _apiService.getCategories();
+      final keywords = await _apiService.getKeywords();
+      
+      setState(() {
+        _categories = categories;
+        _allKeywords = keywords;
+      });
+    } catch (e) {
+      print('載入分類失敗: $e');
+    }
+  }
+  
+  // ===== 新增：執行搜尋 =====
+  Future<void> _performSearch() async {
+    if (_isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final searchText = _searchController.text.trim();
+      
+      // 如果沒有輸入任何搜尋條件，載入所有食譜
+      if (searchText.isEmpty && _selectedTags.isEmpty) {
+        final recipes = await _apiService.getRecipes();  // ← 直接取得所有食譜
+        setState(() {
+          _recipes = recipes;
+          _isLoading = false;
+        });
+        return;
+      }
+      
+      // 有搜尋條件時，使用搜尋 API
+      final recipes = await _apiService.searchRecipes(
+        searchText: searchText.isEmpty ? null : searchText,
+        tags: _selectedTags.isEmpty ? null : _selectedTags,
+      );
+      
+      setState(() {
+        _recipes = recipes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ 搜尋錯誤: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+  
+  // ===== 新增：清除搜尋 =====
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _selectedTags.clear();
+      _isLoading = false;  // ← 確保清除 loading 狀態
+    });
+    _loadRecipes();  // 載入所有食譜
+  }
+  
+  // ===== 新增：切換標籤選擇 =====
+  void _toggleTag(String tag) {
+    setState(() {
+      if (_selectedTags.contains(tag)) {
+        _selectedTags.remove(tag);
+      } else {
+        _selectedTags.add(tag);
+      }
+    });
+    _performSearch(); // 自動搜尋
   }
 
   @override
@@ -46,8 +171,18 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         return Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
           appBar: AppBar(
-            title: const Text('智慧食材辨識與食譜推薦'),
+            elevation: 0,
+            backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
+            foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+            title: const Text(
+              '智慧食材辨識與食譜推薦',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF2C3E50),
+              ),
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.person),
@@ -79,6 +214,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           body: _buildBody(),
           bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: const Color(0xFFFAFAFA),
+            selectedItemColor: const Color(0xFFB3D9E8), // 稍微深一點的淺藍色
+            unselectedItemColor: const Color(0xFF757575),
+            selectedIconTheme: const IconThemeData(color: Color(0xFFB3D9E8)),
+            selectedLabelStyle: const TextStyle(color: Color(0xFFB3D9E8)),
             currentIndex: _selectedIndex,
             onTap: (index) {
               setState(() {
@@ -86,7 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: Colors.green,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.home),
@@ -127,38 +266,61 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 歡迎訊息
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '歡迎回來！',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.05),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white,
+                        const Color(0xFFFAFAFA),
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '歡迎回來！',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            color: const Color(0xFF93939B),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${authProvider.user?.name ?? authProvider.user?.account}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '開始探索美味的食譜吧！',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Text(
+                          '${authProvider.user?.name ?? authProvider.user?.account}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: const Color(0xFF2C3E50),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '開始探索美味的食譜吧！',
+                          style: TextStyle(
+                            color: Color(0xFF757575),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -167,11 +329,11 @@ class _HomeScreenState extends State<HomeScreen> {
           
           const SizedBox(height: 24),
           
-          // 功能卡片
           Text(
             '快速功能',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
+              color: const Color(0xFF2C3E50),
             ),
           ),
           const SizedBox(height: 16),
@@ -187,6 +349,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     setState(() {
                       _selectedIndex = 1;
                     });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('功能開發中...')),
+                    );
                   },
                 ),
               ),
@@ -229,9 +394,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: '歷史記錄',
                   subtitle: '查看歷史',
                   onTap: () {
-                    // TODO: 實作歷史記錄功能
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('功能開發中...')),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HistoryScreen(),
+                      ),
                     );
                   },
                 ),
@@ -250,36 +417,63 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
   }) {
     return Card(
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 32,
-                color: Colors.green,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                const Color(0xFFFAFAFA),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 32,
+                    color: const Color(0xFFE1D6DA),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF2C3E50),
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF757575),
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -316,63 +510,313 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ===== 食譜頁籤加入搜尋功能 =====
   Widget _buildRecipesTab() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.restaurant_menu,
-            size: 80,
-            color: Colors.grey,
+    return Column(
+      children: [
+        // 搜尋框和篩選按鈕
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          color: Colors.white,
+          child: Column(
+            children: [
+              // 搜尋列
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: const TextStyle(fontSize: 14), // 縮小字體
+                      decoration: InputDecoration(
+                        hintText: '搜尋食譜名稱、食材...',
+                        hintStyle: const TextStyle(fontSize: 14), // 縮小提示文字
+                        prefixIcon: const Icon(Icons.search, size: 20), // 縮小圖標
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 44, // 增加圖標區域寬度，讓圖標往右移動
+                          minHeight: 36,
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 20), // 縮小圖標
+                                onPressed: _clearSearch,
+                                padding: EdgeInsets.zero, // 減少按鈕內邊距
+                                constraints: const BoxConstraints(), // 移除最小尺寸限制
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20), // 稍微縮小圓角
+                          borderSide: BorderSide.none, // 無邊框線
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20), // 稍微縮小圓角
+                          borderSide: BorderSide.none, // 無邊框線
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20), // 稍微縮小圓角
+                          borderSide: BorderSide.none, // 無邊框線
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[100],
+                        isDense: true, // 讓輸入框更緊湊
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // 減少水平內邊距，讓圖標和文字更靠近
+                      ),
+                      onChanged: (value) {
+                        setState(() {}); // 更新 UI 顯示清除按鈕
+                      },
+                      onSubmitted: (value) {
+                        _performSearch();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 搜尋按鈕
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Color(0xFF949EC5), size: 20),
+                    onPressed: _performSearch,
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedTags.isNotEmpty 
+                          ? Colors.green[50] 
+                          : Colors.grey[100], // 與篩選按鈕相同的背景色
+                      padding: const EdgeInsets.all(8), // 縮小按鈕內邊距
+                      minimumSize: const Size(36, 36), // 縮小按鈕最小尺寸
+                    ),
+                  ),
+                  // 篩選按鈕
+                  IconButton(
+                    icon: Icon(
+                      _showFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
+                      color: _selectedTags.isNotEmpty ? Colors.green : Colors.grey,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showFilters = !_showFilters;
+                      });
+                    },
+                    style: IconButton.styleFrom(
+                      backgroundColor: _selectedTags.isNotEmpty 
+                          ? Colors.green[50] 
+                          : Colors.grey[100],
+                      padding: const EdgeInsets.all(8), // 縮小按鈕內邊距
+                      minimumSize: const Size(36, 36), // 縮小按鈕最小尺寸
+                    ),
+                  ),
+                ],
+              ),
+              
+              // 已選標籤顯示
+              if (_selectedTags.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _selectedTags.map((tag) {
+                      return Chip(
+                        label: Text(tag),
+                        deleteIcon: const Icon(Icons.close, size: 18),
+                        onDeleted: () => _toggleTag(tag),
+                        backgroundColor: Colors.green[100],
+                        labelStyle: const TextStyle(color: Colors.green),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              
+              // 標籤篩選區（展開/收起）
+              if (_showFilters)
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.all(12),
+                  constraints: const BoxConstraints(
+                    maxHeight: 400,  // ← 限制最大高度
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: SingleChildScrollView(  // ← 新增：可滾動容器
+                    child: _buildFilterSection(),
+                  ),
+                ),
+            ],
           ),
-          SizedBox(height: 16),
-          Text(
-            '食譜推薦功能',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+        ),
+        
+        // 分隔線
+        const Divider(height: 1),
+        
+        // 食譜列表
+        Expanded(
+          child: _buildRecipesList(),
+        ),
+      ],
+    );
+  }
+  
+  // ===== 新增：篩選區塊 =====
+  Widget _buildFilterSection() {
+    if (_categories.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('載入中...', style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              '篩選條件',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '功能開發中...',
-            style: TextStyle(
-              color: Colors.grey,
+            if (_selectedTags.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedTags.clear();
+                  });
+                  _performSearch();
+                },
+                child: const Text('清除全部'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // 依分類顯示關鍵字
+        ..._categories.map((category) {
+          final categoryId = category['id'];
+          final categoryName = category['category_name'];
+          final keywords = _allKeywords
+              .where((kw) => kw['category_id'] == categoryId)
+              .toList();
+          
+          if (keywords.isEmpty) return const SizedBox.shrink();
+          
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text(
+                  categoryName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: keywords.map((kw) {
+                  final keywordName = kw['keyword_name'];
+                  final isSelected = _selectedTags.contains(keywordName);
+                  
+                  return FilterChip(
+                    label: Text(keywordName),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      _toggleTag(keywordName);
+                    },
+                    selectedColor: Colors.green[100],
+                    checkmarkColor: Colors.green,
+                  );
+                }).toList(),
+              ),
+              const Divider(),
+            ],
+          );
+        }).toList(),
+      ],
+    );
+  }
+  
+  // ===== 新增：食譜列表顯示 =====
+  Widget _buildRecipesList() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('載入失敗：$_error'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _performSearch,
+              child: const Text('重試'),
             ),
+          ],
+        ),
+      );
+    }
+
+    if (_recipes.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              '找不到符合的食譜',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _clearSearch,
+              child: const Text('清除搜尋'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: RefreshIndicator(
+        onRefresh: _performSearch,
+        child: GridView.builder(
+          padding: EdgeInsets.zero,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 4,
+            mainAxisSpacing: 4,
           ),
-        ],
+          itemCount: _recipes.length,
+          itemBuilder: (context, index) {
+            final recipe = _recipes[index];
+            return RecipeCard(
+              recipe: recipe,
+              onTap: () {
+                context.push(extra: recipe, '/recipe/${recipe.uid}');
+              },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildFavoritesTab() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite,
-            size: 80,
-            color: Colors.grey,
-          ),
-          SizedBox(height: 16),
-          Text(
-            '我的收藏功能',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '功能開發中...',
-            style: TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
+    return const FavoritesScreen();
   }
 }
