@@ -40,9 +40,13 @@ dependencies:
   
   # 圖片處理
   image_picker: ^1.0.4
+  image: ^4.0.0
   
   # 權限管理
   permission_handler: ^11.0.1
+  
+  # 影像辨識
+  flutter_onnxruntime: ^1.5.1
   
   # 音效播放
   audioplayers: ^5.2.0
@@ -66,6 +70,10 @@ flutter:
 
   assets:
     - assets/sounds/
+    - assets/models/best.onnx
+    - assets/data/classes.json
+    - assets/data/chinese_map.json
+    - assets/data/label_fixes.json
   
   # 字體配置（暫時移除，使用系統預設字體）
   # fonts:
