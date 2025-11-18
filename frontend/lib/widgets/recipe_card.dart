@@ -61,7 +61,7 @@ class _RecipeCardState extends State<RecipeCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message']),
-          backgroundColor: result['success'] ? Colors.green : Colors.red,
+          backgroundColor: result['success'] ? const Color.fromARGB(255, 109, 161, 111) : const Color.fromARGB(255, 139, 77, 72),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
         ),
@@ -106,16 +106,18 @@ class _RecipeCardState extends State<RecipeCard> {
                       ),
                       // 愛心按鈕 - 放在圖片右上角
                       Positioned(
-                        top: 8,
-                        right: 8,
+                        top: 5,
+                        right: 5,
                         child: Container(
+                          width: 35,
+                          height: 35,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withOpacity(0.7),
                             shape: BoxShape.circle,
                           ),
                           child: isLoading
                               ? const Padding(
-                                  padding: EdgeInsets.all(8.0),
+                                  padding: EdgeInsets.all(6.0),
                                   child: SizedBox(
                                     width: 20,
                                     height: 20,
@@ -125,11 +127,11 @@ class _RecipeCardState extends State<RecipeCard> {
                               : IconButton(
                                   icon: Icon(
                                     isFavorite ? Icons.favorite : Icons.favorite_border,
-                                    color: isFavorite ? Colors.red : Colors.grey[600],
+                                    color: isFavorite ? Color(0xFFD4A373) : Colors.grey[600],
                                     size: 20,
                                   ),
                                   onPressed: _toggleFavorite,
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(6),
                                   constraints: const BoxConstraints(),
                                 ),
                         ),

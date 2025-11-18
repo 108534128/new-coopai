@@ -9,6 +9,7 @@ class LoadingButton extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final double? width;
   final double? height;
+  final double borderRadius; 
 
   const LoadingButton({
     super.key,
@@ -20,6 +21,7 @@ class LoadingButton extends StatelessWidget {
     this.padding,
     this.width,
     this.height,
+    this.borderRadius = 10, 
   });
 
   @override
@@ -34,7 +36,7 @@ class LoadingButton extends StatelessWidget {
           foregroundColor: foregroundColor,
           padding: padding,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(borderRadius), 
           ),
         ),
         child: isLoading

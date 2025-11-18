@@ -2,7 +2,6 @@
 
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,114 +10,77 @@ import '../models/recipe.dart';
 
 class ApiService {
   static const String _envApiHost = String.fromEnvironment('API_HOST', defaultValue: '');
-  
-  // 動態生成可能的後端地址，按優先級排序
-  static Future<List<String>> _getPossibleHosts() async {
-    List<String> hosts = [];
-    
-    // 優先添加當前電腦的常見 IP（最可能正確的地址）
-    hosts.addAll([
-      '192.168.0.196:5000',   // 當前電腦 IP（最優先）
-      '192.168.0.100:5000',   // 常見範圍
-      '192.168.1.100:5000',   // 另一個常見範圍
-    ]);
-    
-    try {
-      if (!kIsWeb) {
-        // 獲取本機所有網路介面
-        final interfaces = await NetworkInterface.list(type: InternetAddressType.IPv4);
-        
-        for (final interface in interfaces) {
-          for (final addr in interface.addresses) {
-            if (!addr.isLoopback && addr.type == InternetAddressType.IPv4) {
-              final host = '${addr.address}:5000';
-              // 只添加不在列表中的地址（避免重複）
-              if (!hosts.contains(host)) {
-                hosts.add(host);
-                debugPrint('🔍 發現網路介面 ${interface.name}: ${addr.address}');
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('⚠️ 無法獲取網路介面: $e');
-    }
-    
-    // 添加其他常見的後備地址（掃描常見的區域網路 IP 範圍）
-    // 掃描 192.168.0.x 和 192.168.1.x 網段的常見範圍
-    for (int i = 101; i <= 199; i++) {
-      if (i != 196) { // 跳過已經添加的 196
-        hosts.add('192.168.0.$i:5000');
-        hosts.add('192.168.1.$i:5000');
-      }
-    }
-    
-    // 添加其他常見地址
-    hosts.addAll([
-      '192.168.0.1:5000',    // 路由器
-      '192.168.1.1:5000',    // 路由器
-      '10.0.2.2:5000',       // Android 模擬器
-      'localhost:5000',      // 本機
-    ]);
-    
-    // 移除重複項目
-    return hosts.toSet().toList();
-  }
-  
   static String? _cachedBaseUrl;
+  
+  // 取得可能的主機地址清單
+  static List<String> _getPossibleHosts() {
+    final hosts = <String>[
+      'localhost:5000',
+      '127.0.0.1:5000',
+      '10.0.2.2:5000',  // Android 模擬器
+    ];
+    
+    // 添加常見的私有網路 IP
+    const commonIPs = [1, 100, 101, 150, 200];
+    for (final ip in commonIPs) {
+      hosts.addAll([
+        '192.168.0.$ip:5000',
+        '192.168.1.$ip:5000',
+      ]);
+    }
+    
+    return hosts;
+  }
 
   static String get baseUrl {
-    // 如果已經有緩存的 URL，直接使用
-    if (_cachedBaseUrl != null) {
-      debugPrint('🌐 使用緩存的 API 地址: $_cachedBaseUrl');
-      return _cachedBaseUrl!;
-    }
-
-    // 強制重新計算，不使用緩存
+    if (_cachedBaseUrl != null) return _cachedBaseUrl!;
+    
     if (_envApiHost.isNotEmpty) {
-      final url = _envApiHost.replaceAll(RegExp(r'\/+\$'), '') + '/api';
-      debugPrint('🌐 使用環境變數 API 地址: $url');
-      return url;
-    }
-
-    if (kIsWeb) {
-      // Web 版本：嘗試使用當前頁面的主機名，如果是手機訪問則使用電腦 IP
-      // 如果從手機訪問，需要手動設置電腦的 IP 地址
-      // 例如：如果電腦 IP 是 192.168.0.196，則使用 http://192.168.0.196:5000/api
-      final host = Uri.base.host;
-      String url;
-      if (host.isEmpty || host == 'localhost' || host == '127.0.0.1') {
-        // 如果是從電腦訪問，使用 localhost
-        url = 'http://localhost:5000/api';
-      } else {
-        // 如果是從手機訪問（通過 IP），使用相同的 IP
-        url = 'http://$host:5000/api';
-      }
-      debugPrint('🌐 使用 Web API 地址: $url (host: $host)');
-      return url;
+      return _envApiHost.replaceAll(RegExp(r'\/+\$'), '') + '/api';
     }
     
-    // 對於移動設備，使用智能掃描來動態發現 API 地址
-    // 這裡返回默認值，實際的掃描會在後台進行
-    debugPrint('🔍 需要進行智能 API 地址掃描...');
-    return 'http://localhost:5000/api'; // 默認值，會被智能掃描覆蓋
+    if (kIsWeb) {
+      final host = Uri.base.host;
+      if (host.isEmpty || host == 'localhost' || host == '127.0.0.1') {
+        return 'http://localhost:5000/api';
+      }
+      return 'http://$host:5000/api';
+    }
+    
+    return 'http://localhost:5000/api';
   }
   
-  // 重置緩存的 URL，強制重新檢測
-  static void resetBaseUrl() {
-    _cachedBaseUrl = null;
-  }
+  static void resetBaseUrl() => _cachedBaseUrl = null;
   
-  // 手動設置 API 地址（用於調試）
   static void setCustomBaseUrl(String host) {
     _cachedBaseUrl = 'http://$host/api';
-    debugPrint('🌐 API 地址已設置為: $_cachedBaseUrl');
   }
   
   // 測試連接並自動選擇最佳的 API 地址
   static Future<String?> findBestApiHost() async {
     debugPrint('🔍 開始尋找最佳 API 地址...');
+    
+    // 優先嘗試環境變數中指定的主機
+    if (_envApiHost.isNotEmpty) {
+      try {
+        final envHost = _envApiHost.replaceAll(RegExp(r'https?://'), '').replaceAll('/api', '');
+        final testUrl = 'http://$envHost/api/health';
+        debugPrint('🌐 測試環境變數主機: $testUrl');
+        
+        final response = await http.get(
+          Uri.parse(testUrl),
+          headers: {'Content-Type': 'application/json'},
+        ).timeout(const Duration(seconds: 8));
+        
+        if (response.statusCode == 200) {
+          debugPrint('✅ 環境變數主機連接成功: $envHost');
+          setCustomBaseUrl(envHost);
+          return envHost;
+        }
+      } catch (e) {
+        debugPrint('❌ 環境變數主機連接失敗: $e');
+      }
+    }
     
     final possibleHosts = await _getPossibleHosts();
     
@@ -134,10 +96,12 @@ class ApiService {
         
         if (response.statusCode == 200) {
           debugPrint('✅ 連接成功: $host');
+          setCustomBaseUrl(host);
+          setCustomBaseUrl(host);
           return host;
         }
       } catch (e) {
-        debugPrint('❌ 連接失敗: $host - $e');
+        debugPrint('❌ 連接失敗: $host - ${e.toString().split('\n').first}');
       }
     }
     
@@ -795,6 +759,42 @@ class ApiService {
     } catch (e) {
       print('❌ 清空歷史紀錄錯誤: $e');
       return {'success': false, 'message': '發生錯誤: $e'};
+    }
+  }
+
+  // ==================== 推薦系統相關 ====================
+
+  Future<Map<String, dynamic>> getRecommendations({int limit = 20}) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/recommendations?limit=$limit'),
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'success': true,
+          'recommendations': List<Map<String, dynamic>>.from(data['recommendations']),
+          'recommendation_type': data['recommendation_type'],
+          'user_preferences': data['user_preferences'],
+          'message': data['message'],
+        };
+      } else {
+        final errorData = json.decode(response.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? '獲取推薦失敗',
+          'recommendations': [],
+        };
+      }
+    } catch (e) {
+      print('❌ 獲取推薦錯誤: $e');
+      return {
+        'success': false,
+        'message': '發生錯誤: $e',
+        'recommendations': [],
+      };
     }
   }
 }

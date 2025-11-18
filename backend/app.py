@@ -5,17 +5,18 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
-from datetime import timedelta
+from datetime import timedelta, datetime
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 import os
+import uuid
 from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
 
 # 資料庫配置（優先使用環境變數，否則使用預設值）
 import os
-database_url = os.environ.get('DATABASE_URL') or 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:17485/cookpal'
+database_url = os.environ.get('DATABASE_URL') or 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:14672/cookpal'
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # 資料庫連接池配置，防止連接中斷
@@ -667,6 +668,105 @@ def get_keywords():
             'error': '取得關鍵字失敗',
             'message': str(e)
         }), 500
+
+# ==================== 推薦系統 API ====================
+
+@app.route('/api/recommendations', methods=['GET'])
+@jwt_required()
+def get_recommendations():
+    """基於歷史瀏覽和收藏的推薦機制，按 likes 數排序"""
+    try:
+        uid = get_jwt_identity()
+        limit = request.args.get('limit', default=20, type=int)
+        
+        # 1. 獲取用戶的歷史瀏覽和收藏記錄
+        user_history = db.session.query(History.recipe_id).filter_by(user_id=uid).all()
+        user_favorites = db.session.query(Favorite.recipe_id).filter_by(user_id=uid).all()
+        
+        # 提取食譜ID
+        viewed_recipe_ids = [h.recipe_id for h in user_history]
+        favorite_recipe_ids = [f.recipe_id for f in user_favorites]
+        
+        # 合併並去重
+        interacted_recipe_ids = list(set(viewed_recipe_ids + favorite_recipe_ids))
+        
+        # 2. 如果用戶沒有任何互動記錄，直接返回最熱門的食譜
+        if not interacted_recipe_ids:
+            popular_recipes = Recipe.query.order_by(Recipe.likes.desc()).limit(limit).all()
+            return jsonify({
+                'status': 'success',
+                'recommendations': [recipe.to_dict() for recipe in popular_recipes],
+                'recommendation_type': 'popular',
+                'message': '基於熱門度的推薦'
+            }), 200
+        
+        # 3. 分析用戶偏好的標籤
+        interacted_recipes = Recipe.query.filter(Recipe.uid.in_(interacted_recipe_ids)).all()
+        tag_counts = {}
+        
+        for recipe in interacted_recipes:
+            if recipe.tag:
+                tags = [tag.strip() for tag in recipe.tag.split(',') if tag.strip()]
+                for tag in tags:
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        
+        # 4. 找出最常見的標籤（偏好）
+        if tag_counts:
+            # 排序標籤，取前3個最常見的
+            preferred_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+            preferred_tag_names = [tag[0] for tag in preferred_tags]
+        else:
+            preferred_tag_names = []
+        
+        # 5. 基於偏好標籤推薦食譜（排除已經互動過的）
+        recommended_recipes = []
+        
+        if preferred_tag_names:
+            # 使用 LIKE 查詢包含偏好標籤的食譜
+            tag_conditions = []
+            for tag in preferred_tag_names:
+                tag_conditions.append(Recipe.tag.like(f'%{tag}%'))
+            
+            # 使用 OR 條件組合所有標籤查詢
+            from sqlalchemy import or_
+            
+            recommended_recipes = Recipe.query.filter(
+                or_(*tag_conditions),
+                ~Recipe.uid.in_(interacted_recipe_ids)  # 排除已互動的食譜
+            ).order_by(Recipe.likes.desc()).limit(limit).all()
+        
+        # 6. 如果基於標籤的推薦不足，補充熱門食譜
+        if len(recommended_recipes) < limit:
+            remaining_limit = limit - len(recommended_recipes)
+            excluded_ids = [r.uid for r in recommended_recipes] + interacted_recipe_ids
+            
+            additional_recipes = Recipe.query.filter(
+                ~Recipe.uid.in_(excluded_ids)
+            ).order_by(Recipe.likes.desc()).limit(remaining_limit).all()
+            
+            recommended_recipes.extend(additional_recipes)
+        
+        return jsonify({
+            'status': 'success',
+            'recommendations': [recipe.to_dict() for recipe in recommended_recipes],
+            'recommendation_type': 'personalized',
+            'user_preferences': {
+                'preferred_tags': preferred_tag_names,
+                'viewed_count': len(viewed_recipe_ids),
+                'favorited_count': len(favorite_recipe_ids)
+            },
+            'message': '基於個人偏好的推薦'
+        }), 200
+        
+    except Exception as e:
+        print(f'推薦系統錯誤：{str(e)}')
+        import traceback
+        print(f'詳細錯誤：{traceback.format_exc()}')
+        return jsonify({
+            'error': '獲取推薦失敗',
+            'message': str(e)
+        }), 500
+
 
 # ==================== 我的最愛 API ====================
 

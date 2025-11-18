@@ -28,102 +28,152 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // 頁面白底
       body: SafeArea(
-        child: SingleChildScrollView( // 添加 SingleChildScrollView
+        child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Form(
               key: _formKey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 確保 logo 不會太靠近頂部
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.05),
-                  
-                  // Logo和標題
-                  const Icon(
-                    Icons.restaurant_menu,
-                    size: 80,
-                    color: Colors.green,
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 40),
+
+                  //標題
                   const Text(
-                    '智慧食材辨識與食譜推薦',
+                    "登 入",
                     style: TextStyle(
-                      fontSize: 24,
+                      fontSize: 40,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Color(0xFFD4A373), // 咖啡色
                     ),
-                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height:100),
+
+                  // 帳號
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "帳號",
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Color(0xFF32201C),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '請登入您的帳戶',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
+
+                  // ★ 奶油色輸入框背景
+                  Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2E6C9),
+                      borderRadius: BorderRadius.circular(100),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-
-                  // 帳號輸入框
-                  CustomTextField(
-                    controller: _accountController,
-                    labelText: '帳號',
-                    prefixIcon: Icons.person,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '請輸入帳號';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 密碼輸入框
-                  CustomTextField(
-                    controller: _passwordController,
-                    labelText: '密碼',
-                    prefixIcon: Icons.lock,
-                    obscureText: _obscurePassword,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '請輸入密碼';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 登入按鈕
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, child) {
-                      return LoadingButton(
-                        onPressed: authProvider.isLoading ? null : _handleLogin,
-                        isLoading: authProvider.isLoading,
-                        child: const Text(
-                          '登入',
-                          style: TextStyle(fontSize: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _accountController,
+                            hintText: "",
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return '請輸入帳號';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
 
-                  // 錯誤訊息
+                  // 密碼
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "密碼",
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Color(0xFF32201C),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAEDCD),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            hintText: "",
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return '請輸入密碼';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                          child: Icon(
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            size: 22,
+                            color: const Color(0xFF6B5E53), // ← 看得見的深灰咖色
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              
+                const SizedBox(height: 60),
+
+                // 登入按鈕
+                Consumer<AuthProvider>(
+                  builder: (context, authProvider, child) {
+                    return LoadingButton(
+                      onPressed: authProvider.isLoading ? null : _handleLogin,
+                      isLoading: authProvider.isLoading,
+                      backgroundColor: const Color(0xFFAEC7A5),
+                      width: MediaQuery.of(context).size.width * 0.6,
+                      height: 48,
+                      borderRadius: 100,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 0),
+                        child: Text(
+                          '登 入',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 10,  
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                  const SizedBox(height: 60),
+
+                  // 錯誤訊息（保留原功能）
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, child) {
                       if (authProvider.error != null) {
@@ -132,11 +182,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: BoxDecoration(
                             color: Colors.red.shade50,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red.shade200),
+                            border: Border.all(color: const Color(0xFFFAEDCD)),
                           ),
                           child: Text(
                             authProvider.error!,
-                            style: TextStyle(color: Colors.red.shade700),
+                            style: TextStyle(color: const Color.fromARGB(255, 88, 36, 36)),
                             textAlign: TextAlign.center,
                           ),
                         );
@@ -145,28 +195,31 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 10),
 
-                  // 註冊連結
+                  // ★ 註冊連結（改成與 UI 相符）
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('還沒有帳戶？'),
+                      Text(
+                        "還沒有帳號？",
+                        style: TextStyle(color: Color(0xFF32201C)),
+                      ),
                       TextButton(
                         onPressed: () => context.go('/register'),
                         child: const Text(
-                          '立即註冊',
+                          '註 冊',
                           style: TextStyle(
-                            color: Colors.green,
+                            color: Color(0xFFB07A45), // 咖啡色
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                       ),
                     ],
                   ),
 
-                  // 在底部添加額外的 padding 以確保鍵盤彈出時有足夠空間
-                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -180,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     final success = await authProvider.login(
       _accountController.text.trim(),
       _passwordController.text,
@@ -190,4 +243,4 @@ class _LoginScreenState extends State<LoginScreen> {
       context.go('/home');
     }
   }
-  }
+}

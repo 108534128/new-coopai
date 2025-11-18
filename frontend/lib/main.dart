@@ -10,7 +10,9 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/splash_screen.dart'; 
 import 'services/api_service.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -67,8 +69,12 @@ class MyApp extends StatelessWidget {
 }
 
 final GoRouter _router = GoRouter(
-  initialLocation: '/login',
+  initialLocation: '/splash',      
   routes: [
+    GoRoute(
+      path: '/splash',             
+      builder: (context, state) => const SplashScreen(),
+    ),
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),

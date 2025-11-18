@@ -109,7 +109,7 @@ class DirectVoiceService extends ChangeNotifier {
           debugPrint('🔍 TTS 完成後檢查：_isListening=$_isListening, actuallyListening=$actuallyListening, _isRestarting=$_isRestarting');
           
           if (!actuallyListening && !_isRestarting) {
-            Future.delayed(const Duration(milliseconds: 800), () {
+            Future.delayed(const Duration(milliseconds: 1500), () {
               // 再次檢查狀態
               bool stillListening = _speechToText != null && _speechToText!.isListening;
               if (_isWakeModeActive && !stillListening && !_isRestarting && !_isSpeaking) {
@@ -165,7 +165,7 @@ class DirectVoiceService extends ChangeNotifier {
             debugPrint('🔄 喚醒模式：監聽結束，準備重新啟動...');
             
             // 短暫延遲後重新啟動監聽
-            Future.delayed(const Duration(milliseconds: 1500), () {
+            Future.delayed(const Duration(milliseconds: 2500), () {
               if (_isWakeModeActive && !_speechToText!.isListening && !_isRestarting) {
                 debugPrint('🎤 重新啟動持續監聽...');
                 _startContinuousListening();
@@ -177,7 +177,7 @@ class DirectVoiceService extends ChangeNotifier {
           if (val == 'done' && _isWakeModeActive && !_isRestarting) {
             debugPrint('� 語音識別完成，準備重新開始監聽...');
             
-            Future.delayed(const Duration(milliseconds: 1000), () {
+            Future.delayed(const Duration(milliseconds: 2000), () {
               if (_isWakeModeActive && !_speechToText!.isListening && !_isRestarting) {
                 debugPrint('🔄 識別完成後重新啟動監聽...');
                 _startContinuousListening();
@@ -359,8 +359,8 @@ class DirectVoiceService extends ChangeNotifier {
           partialResults: true, // 啟用部分結果，可以更快響應
           listenMode: ListenMode.dictation, // 使用 dictation 模式保持持續監聽
           cancelOnError: false, // 錯誤時不取消監聽
-          listenFor: const Duration(seconds: 30), // 每次監聽最多30秒
-          pauseFor: const Duration(seconds: 3), // 靜音3秒後暫停
+          listenFor: const Duration(minutes: 2), // 每次監聽最多2分鐘（延長到120秒）
+          pauseFor: const Duration(seconds: 120), // 靜音120秒後暫停（延長靜音容忍時間）
         );
         
         // 不依賴 listen 的返回值，而是等待狀態回調確認
@@ -447,19 +447,16 @@ class DirectVoiceService extends ChangeNotifier {
       debugPrint('🎯 識別到喚醒詞: "$command"');
       debugPrint('🎤 啟動語音指令模式...');
       
-      // 進入指令模式
+      // 進入指令模式，但保持喚醒模式活躍
       _isCommandModeActive = true;
-      _isWakeModeActive = false;
+      // 不要禁用喚醒模式，這樣才能持續監聽
+      // _isWakeModeActive = false; // 移除這行
       notifyListeners();
       
       // 語音反饋
       speak('我在聽，請說指令');
       
-      // 重新啟動監聽等待指令
-      Future.delayed(const Duration(seconds: 1), () {
-        startListening();
-      });
-      
+      // 語音播放完成後會自動重新啟動監聽（由 TTS 完成回調處理）
       return; // 喚醒詞處理完成，不繼續處理其他指令
     }
     
@@ -512,14 +509,33 @@ class DirectVoiceService extends ChangeNotifier {
       debugPrint('🔄 未識別指令，繼續監聽...');
     }
     
-    // 如果執行了指令且在喚醒模式，等待 TTS 播放完成後重新啟動監聽
-    if (commandExecuted && _isWakeModeActive) {
+    // 如果執行了指令，退出指令模式但保持喚醒模式，繼續監聽
+    if (commandExecuted) {
       _isCommandModeActive = false;
       notifyListeners();
+      debugPrint('✅ 指令執行完成，保持喚醒模式並重新啟動監聽');
       
-      // 等待 TTS 播放完成後再重新啟動監聽
-      // 使用一個標誌來追蹤是否需要重新啟動監聽
-      _restartListeningAfterTts();
+      // 如果正在播放 TTS，TTS 完成回調會自動重新啟動監聽
+      // 如果沒有 TTS，立即重新啟動監聽
+      if (!_isSpeaking) {
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          if (_isWakeModeActive && !_speechToText!.isListening && !_isRestarting) {
+            debugPrint('🔄 指令執行完成，重新啟動持續監聽...');
+            _startContinuousListening();
+          }
+        });
+      }
+      // 如果正在播放 TTS，TTS 完成回調會處理重新啟動
+    } else {
+      // 如果沒有執行指令但在喚醒模式，繼續監聽
+      if (_isWakeModeActive) {
+        debugPrint('🔄 未識別指令，但保持喚醒模式，重新啟動監聽...');
+        Future.delayed(const Duration(milliseconds: 2000), () {
+          if (_isWakeModeActive && !_speechToText!.isListening && !_isRestarting) {
+            _startContinuousListening();
+          }
+        });
+      }
     }
   }
   
@@ -600,26 +616,7 @@ class DirectVoiceService extends ChangeNotifier {
     startListening();
   }
   
-  /// 在 TTS 播放完成後重新啟動監聽
-  void _restartListeningAfterTts() {
-    // 如果正在播放語音，等待播放完成（TTS 完成回調會處理）
-    if (_isSpeaking) {
-      debugPrint('⏳ 等待 TTS 播放完成後重新啟動監聽...');
-      // TTS 完成回調會處理重新啟動，這裡不需要做任何事
-      return;
-    }
-    
-    // 如果沒有播放語音，直接重新啟動監聽
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      bool actuallyListening = _speechToText != null && _speechToText!.isListening;
-      if (_isWakeModeActive && !actuallyListening && !_isRestarting && !_isSpeaking) {
-        debugPrint('🔄 指令執行完成（無 TTS），重新啟動持續監聽...');
-        _startContinuousListening();
-      } else {
-        debugPrint('⚠️ 跳過重新啟動：actuallyListening=$actuallyListening, _isRestarting=$_isRestarting, _isSpeaking=$_isSpeaking');
-      }
-    });
-  }
+
   
   /// 停止語音喚醒模式
   Future<void> stopWakeMode() async {

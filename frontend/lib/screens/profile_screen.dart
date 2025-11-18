@@ -199,8 +199,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (_isEditing)
                               CustomTextField(
                                 controller: _fullNameController,
-                                labelText: '姓名',
-                                prefixIcon: Icons.badge,
                               )
                             else
                               Text(
