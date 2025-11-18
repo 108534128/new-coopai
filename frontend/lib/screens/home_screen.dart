@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _allKeywords = [];
   List<String> _selectedTags = [];
   bool _showFilters = false;
-  String _selectedCategory = '家常菜'; // 新增：當前選中的分類
+  String _selectedCategory = ''; // 新增：當前選中的分類（預設為空）
   
   // ===== 新增：推薦相關變數 =====
   List<Map<String, dynamic>> _recommendations = [];
@@ -209,8 +209,8 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final searchText = _searchController.text.trim();
       
-      // 如果沒有輸入任何搜尋條件，載入所有食譜
-      if (searchText.isEmpty && _selectedTags.isEmpty) {
+      // 如果沒有輸入任何搜尋條件（包括分類），載入所有食譜
+      if (searchText.isEmpty && _selectedTags.isEmpty && _selectedCategory.isEmpty) {
         // 直接獲取所有食譜，不要調用 _loadRecipes（避免 _isLoading 衝突）
         final recipes = await _apiService.getRecipes();
         
@@ -233,9 +233,16 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       
       // 有搜尋條件時，使用搜尋 API
+      // 將選中的分類加入 tags 進行搜尋
+      List<String> searchTags = List.from(_selectedTags);
+      if (_selectedCategory.isNotEmpty) {
+        // 如果選擇了分類，將分類作為搜尋條件
+        searchTags.add(_selectedCategory);
+      }
+      
       final recipes = await _apiService.searchRecipes(
         searchText: searchText.isEmpty ? null : searchText,
-        tags: _selectedTags.isEmpty ? null : _selectedTags,
+        tags: searchTags.isEmpty ? null : searchTags,
       );
       
       // 模擬分頁邏輯（暫時先用這種方式）
@@ -272,6 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _searchController.clear();
       _selectedTags.clear();
+      _selectedCategory = ''; // 重置分類選擇為空
       _isLoading = false;  // 確保重置載入狀態
       _isLoadingMore = false;
       _hasMoreData = true;
@@ -303,11 +311,18 @@ class _HomeScreenState extends State<HomeScreen> {
   // ===== 新增：選擇分類 =====
   void _selectCategory(String category) {
     setState(() {
-      _selectedCategory = category;
+      // 如果點擊已選中的分類，則取消選擇
+      if (_selectedCategory == category) {
+        _selectedCategory = '';
+        print('取消選擇分類: $category');
+      } else {
+        _selectedCategory = category;
+        _selectedTags.clear(); // 清空之前的標籤選擇
+        print('選擇分類: $category');
+      }
     });
-    // 可以根據分類進行篩選或其他操作
-    print('選擇分類: $category');
-    // 這裡可以添加根據分類篩選食譜的邏輯
+    // 執行搜尋，使用分類作為搜尋條件
+    _performSearch();
   }
 
   @override

@@ -94,24 +94,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
       backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
-        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        backgroundColor: const Color(0xFFCCD5AE), // 米綠色標題欄（與首頁一致）
+        foregroundColor: const Color(0xFFFEFAE0), // 米白色文字
         title: const Text(
           '歷史紀錄',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+            color: Color(0xFFFEFAE0),
           ),
         ),
         actions: [
           if (history.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep, color: Color(0xFF2C3E50)),
+              icon: const Icon(Icons.delete_sweep, color: Color(0xFFFEFAE0)),
               tooltip: '清空歷史',
               onPressed: _showClearAllDialog,
             ),
           IconButton(
-            icon: const Icon(Icons.refresh, color: Color(0xFF2C3E50)),
+            icon: const Icon(Icons.refresh, color: Color(0xFFFEFAE0)),
             tooltip: '重新整理',
             onPressed: _loadHistory,
           ),
@@ -120,7 +120,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                color: Color(0xFF64B5F6),
+                color: Color(0xFFD4A373), // 咖啡色（與首頁一致）
               ),
             )
           : history.isEmpty
@@ -137,13 +137,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F4F8).withOpacity(0.5),
+              color: const Color(0xFFF5F5DC).withOpacity(0.5), // 米色背景
               borderRadius: BorderRadius.circular(50),
             ),
             child: const Icon(
               Icons.history,
               size: 60,
-              color: Color(0xFF8C9BA6),
+              color: Color(0xFFD4A373), // 咖啡色圖示
             ),
           ),
           const SizedBox(height: 24),
@@ -178,13 +178,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                  color: const Color(0xFFF5F5DC).withOpacity(0.5), // 米色
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Icon(
                   Icons.info_outline,
                   size: 14,
-                  color: Color(0xFF8C9BA6),
+                  color: Color(0xFFD4A373), // 咖啡色
                 ),
               ),
               const SizedBox(width: 8),
@@ -201,7 +201,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadHistory,
-            color: const Color(0xFF64B5F6),
+            color: const Color(0xFFD4A373), // 咖啡色
             child: ListView.builder(
               itemCount: history.length,
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -306,13 +306,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                        color: const Color(0xFFF5F5DC).withOpacity(0.5), // 米色
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Icon(
                         Icons.access_time,
                         size: 12,
-                        color: Color(0xFF8C9BA6),
+                        color: Color(0xFFD4A373), // 咖啡色
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -333,13 +333,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         Container(
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                            color: const Color(0xFFF5F5DC).withOpacity(0.5), // 米色
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Icon(
                             Icons.label,
                             size: 12,
-                            color: Color(0xFF8C9BA6),
+                            color: Color(0xFFD4A373), // 咖啡色
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -472,7 +472,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: const Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFF64B5F6),
+                color: Color(0xFFD4A373), // 咖啡色
               ),
             ),
           );
