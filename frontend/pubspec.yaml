@@ -48,9 +48,6 @@ dependencies:
   # 權限管理
   permission_handler: ^11.0.1
   
-  # 影像辨識
-  flutter_onnxruntime: ^1.5.1
-  
   # 音效播放
   audioplayers: ^5.2.0
   

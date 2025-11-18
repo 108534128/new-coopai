@@ -16,8 +16,6 @@ app = Flask(__name__)
 
 # 資料庫配置（優先使用環境變數，否則使用預設值）
 import os
-# 預設使用 ngrok 轉發的資料庫，如果需要使用本地資料庫，請在 .env 檔案中設定 DATABASE_URL
-# ngrok 地址：0.tcp.jp.ngrok.io:14672 -> localhost:3306
 database_url = os.environ.get('DATABASE_URL') or 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:14672/cookpal'
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
