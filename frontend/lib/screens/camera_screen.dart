@@ -1,9 +1,12 @@
 // frontend/lib/screens/camera_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../services/food_detection_service.dart';
+// 條件導入：Web 平台使用 stub，其他平台使用真實實現
+import '../services/food_detection_service_stub.dart'
+    if (dart.library.io) '../services/food_detection_service.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -126,6 +129,96 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 在 Web 平台上顯示不支援訊息
+    if (kIsWeb) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8F9FA),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFFCCD5AE),
+          foregroundColor: const Color(0xFFFEFAE0),
+          title: const Text(
+            '拍照辨識',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFFEFAE0),
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5DC).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Icon(
+                    Icons.info_outline,
+                    size: 80,
+                    color: Color(0xFFD4A373),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  'Web 版本不支援拍照辨識功能',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF32201C),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '請使用手機版 APP 或桌面版應用程式\n來使用 AI 食材辨識功能',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF9E6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFD4A373).withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.lightbulb_outline,
+                        color: Color(0xFFD4A373),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '提示：您可以使用搜尋功能來尋找喜愛的食譜',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 原有的相機功能（僅在非 Web 平台）
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

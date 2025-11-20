@@ -103,7 +103,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             '還沒有最愛的食譜',
             style: TextStyle(
               fontSize: 18,
-              color: Color(0xFF424242),
+              color: Color(0xFF32201C),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -163,7 +163,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: Color(0xFF2C3E50),
+              color: Color(0xFF32201C),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

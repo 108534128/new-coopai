@@ -346,13 +346,13 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
       backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
-        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        backgroundColor: const Color(0xFFCCD5AE), // 米綠色標題欄（與首頁一致）
+        foregroundColor: const Color(0xFFFEFAE0), // 米白色文字
         title: Text(
           '${widget.recipe.name} 步驟',
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+            color: Color(0xFFFEFAE0),
           ),
         ),
         actions: [
@@ -361,7 +361,7 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
             onPressed: _isVoiceEnabled ? null : _toggleTTS,
             icon: Icon(
               _isVoiceEnabled ? Icons.volume_up : Icons.volume_off,
-              color: _isVoiceEnabled ? const Color(0xFF6BCB9F) : const Color(0xFF95A5A6),
+              color: _isVoiceEnabled ? const Color(0xFFD4A373) : const Color(0xFFFEFAE0), // 咖啡色/米白色
             ),
             tooltip: '語音朗讀步驟',
           ),
@@ -370,7 +370,7 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
             onPressed: _toggleVoiceControl,
             icon: Icon(
               _voiceService.isWakeModeActive ? Icons.mic : Icons.mic_off,
-              color: _voiceService.isWakeModeActive ? const Color(0xFFFF9A9E) : const Color(0xFF95A5A6),
+              color: _voiceService.isWakeModeActive ? const Color(0xFFD4A373) : const Color(0xFFFEFAE0), // 咖啡色/米白色
             ),
             tooltip: '語音控制',
           ),
@@ -844,10 +844,10 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                               icon: const Icon(Icons.arrow_back, size: 18),
                               label: const Text('上一步'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFB0BEC5),
-                                foregroundColor: Colors.white,
+                                backgroundColor: const Color(0xFFCCD5AE), // 米綠色
+                                foregroundColor: Colors.white, // 白色文字
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -860,7 +860,7 @@ class _RecipeWalkthroughScreenState extends State<RecipeWalkthroughScreen> {
                           child: ElevatedButton(
                             onPressed: () => _handleNext(context),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFDCD7ED), // 淺紫色
+                              backgroundColor: const Color(0xFFD4A373), // 咖啡色
                               foregroundColor: Colors.white, // 白色文字
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -951,15 +951,15 @@ class _StepIndicator extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F4F8),
+                  color: const Color(0xFFF5F5DC), // 米色
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '第 ${current + 1} / $total 步',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF2C3E50),
-                      ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF32201C),
+                    ),
                 ),
               ),
             ],

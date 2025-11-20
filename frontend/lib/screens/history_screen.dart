@@ -150,8 +150,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const Text(
             '還沒有瀏覽紀錄',
             style: TextStyle(
-              fontSize: 18,
-              color: Color(0xFF424242),
+              fontSize: 16,
+              color: Color(0xFF32201C),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -292,7 +292,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: Color(0xFF2C3E50),
+                color: Color(0xFF32201C),
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

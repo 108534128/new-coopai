@@ -1,11 +1,12 @@
 // frontend/lib/services/food_detection_service.dart
+// 真實實現版本（用於 Android/iOS/Desktop）
 
 import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
-import 'package:onnxruntime/onnxruntime.dart';
 import 'package:image/image.dart' as img;
+import 'package:onnxruntime/onnxruntime.dart';
 
 class FoodDetectionService {
   OrtSession? _session;

@@ -42,8 +42,9 @@ dependencies:
   image_picker: ^1.0.4
   image: ^4.0.0
   
-  # ONNX Runtime for AI model inference
-  onnxruntime: ^1.4.1
+  # ONNX Runtime for AI model inference (僅支援 Android/iOS/Desktop)
+  onnxruntime:
+    ^1.4.1
   
   # 權限管理
   permission_handler: ^11.0.1

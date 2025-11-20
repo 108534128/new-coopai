@@ -203,7 +203,7 @@ class ApiService {
 
   // ==================== 食譜相關 ====================
 
-  Future<List<Recipe>> getRecipes({int page = 1, int perPage = 200}) async {
+  Future<List<Recipe>> getRecipes({int page = 1, int perPage = 50, int retryCount = 0}) async {
     try {
       // 如果沒有緩存的 URL，先進行智能掃描
       if (_cachedBaseUrl == null && !kIsWeb) {
@@ -211,7 +211,7 @@ class ApiService {
         await autoDetectApiHost(); // 自動掃描並設置最佳 URL
       }
 
-      debugPrint('🔍 正在獲取食譜列表...');
+      debugPrint('🔍 正在獲取食譜列表... (嘗試 ${retryCount + 1})');
       debugPrint('📍 URL: $baseUrl/recipes?page=$page&per_page=$perPage');
       
       final headers = await _getHeaders();
@@ -220,45 +220,73 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/recipes?page=$page&per_page=$perPage'),
         headers: headers,
+      ).timeout(
+        const Duration(seconds: 30), // 增加超時時間到 30 秒
+        onTimeout: () {
+          debugPrint('⏰ 請求超時 (30秒)');
+          throw Exception('請求超時，請檢查網絡連接');
+        },
       );
 
-      print('📤 Response status code: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
-
+      debugPrint('📤 Response status code: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         
         if (!data.containsKey('recipes')) {
-          print('❌ Response does not contain recipes key');
-          print('🔍 Available keys: ${data.keys.toList()}');
+          debugPrint('❌ Response does not contain recipes key');
+          debugPrint('🔍 Available keys: ${data.keys.toList()}');
           throw Exception('Invalid response format: missing recipes key');
         }
         
         final List<dynamic> recipesJson = data['recipes'];
-        print('📊 Found ${recipesJson.length} recipes');
+        debugPrint('📊 Found ${recipesJson.length} recipes');
         
         final recipes = recipesJson.map((json) {
           try {
             return Recipe.fromJson(json);
           } catch (e) {
-            print('❌ Error parsing recipe: $e');
-            print('🔍 Problematic JSON: $json');
+            debugPrint('❌ Error parsing recipe: $e');
             rethrow;
           }
         }).toList();
         
-        print('✅ Successfully loaded ${recipes.length} recipes');
+        debugPrint('✅ Successfully loaded ${recipes.length} recipes');
         return recipes;
       } else {
         final errorBody = response.body;
-        print('❌ Server returned ${response.statusCode}');
-        print('❌ Error body: $errorBody');
+        debugPrint('❌ Server returned ${response.statusCode}');
+        debugPrint('❌ Error body: $errorBody');
         throw Exception('Server returned ${response.statusCode}: $errorBody');
       }
-    } catch (e, stackTrace) {
-      print('❌ Error fetching recipes: $e');
-      print('📋 Stack trace: $stackTrace');
-      throw Exception('Failed to load recipes: $e');
+    } catch (e) {
+      debugPrint('❌ Error fetching recipes (attempt ${retryCount + 1}): $e');
+      
+      // 如果是連接關閉或網路問題，且未超過重試次數，則重試
+      if (retryCount < 2 && (
+          e.toString().contains('Connection closed') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('SocketException') ||
+          e.toString().contains('請求超時'))) {
+        
+        debugPrint('🔄 檢測到連接問題，等待 2 秒後重試...');
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // 如果是第一次重試，嘗試重新掃描 API 地址
+        if (retryCount == 0 && !kIsWeb) {
+          debugPrint('🔍 重新掃描 API 地址...');
+          await autoDetectApiHost();
+        }
+        
+        return await getRecipes(
+          page: page,
+          perPage: perPage,
+          retryCount: retryCount + 1,
+        );
+      }
+      
+      // 超過重試次數或其他錯誤
+      throw Exception('載入食譜失敗 (已重試 ${retryCount + 1} 次):\n$e\n\n建議：\n• 檢查網路連接\n• 確認後端服務正在運行\n• 嘗試重新啟動應用');
     }
   }
 

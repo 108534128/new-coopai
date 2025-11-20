@@ -98,6 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final recipes = await _apiService.getRecipes();
       print('📦 獲取到 ${recipes.length} 個食譜');
       
+      // 隨機排序食譜列表
+      recipes.shuffle();
+      
       // 模擬分頁邏輯（暫時先用這種方式）
       final startIndex = (isRefresh ? 0 : _recipes.length);
       final endIndex = startIndex + _pageSize;
@@ -214,6 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
         // 直接獲取所有食譜，不要調用 _loadRecipes（避免 _isLoading 衝突）
         final recipes = await _apiService.getRecipes();
         
+        // 隨機排序食譜列表
+        recipes.shuffle();
+        
         final startIndex = (isRefresh ? 0 : _recipes.length);
         final endIndex = startIndex + _pageSize;
         final pageRecipes = recipes.skip(startIndex).take(_pageSize).toList();
@@ -329,6 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
+        
         if (authProvider.isLoading) {
           return const Scaffold(
             body: Center(
@@ -444,10 +451,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
-    return SingleChildScrollView(
-      controller: _scrollController, // 新增：滾動控制器支援分頁
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    return RefreshIndicator(
+      onRefresh: () async {
+        // 下拉刷新：重新載入推薦食譜
+        await _loadRecommendations();
+        // 可選：同時刷新食譜列表
+        await _loadRecipes();
+      },
+      color: const Color(0xFFD4A373),
+      child: SingleChildScrollView(
+        controller: _scrollController, // 新增：滾動控制器支援分頁
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 使用者問候部分
@@ -648,6 +663,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }
@@ -911,7 +927,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF2C3E50),
+                          color: Color(0xFF32201C),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

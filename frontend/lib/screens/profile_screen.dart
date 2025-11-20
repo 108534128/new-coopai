@@ -44,13 +44,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
-        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        backgroundColor: const Color(0xFFCCD5AE), // 淺藍色標題欄
+        foregroundColor: const Color(0xFF32201C), // 深棕色文字
         title: const Text(
           '個人資料',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+            color: Color(0xFF32201C),
           ),
         ),
         leading: IconButton(
@@ -68,7 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: const Text(
                 '編輯',
-                style: TextStyle(color: Color(0xFF2C3E50)),
+                style: TextStyle(color: Color(0xFF32201C)),
               ),
             )
           else
@@ -76,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: _cancelEdit,
               child: const Text(
                 '取消',
-                style: TextStyle(color: Color(0xFF2C3E50)),
+                style: TextStyle(color: Color(0xFF32201C)),
               ),
             ),
         ],
@@ -86,7 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (authProvider.isLoading) {
             return const Center(
               child: CircularProgressIndicator(
-                color: Color(0xFF64B5F6),
+                color: Color(0xFFD4A373),
               ),
             );
           }
@@ -319,6 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return LoadingButton(
                           onPressed: authProvider.isLoading ? null : _handleSave,
                           isLoading: authProvider.isLoading,
+                          backgroundColor: const Color(0xFFAEC7A5),
                           child: const Text(
                             '儲存變更',
                             style: TextStyle(fontSize: 16),
@@ -357,8 +358,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   OutlinedButton(
                     onPressed: () => _showLogoutDialog(),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
+                      foregroundColor: const Color.fromARGB(255, 133, 35, 28),
+                      side: const BorderSide(color:Color.fromARGB(255, 133, 35, 28)),
                     ),
                     child: const Text('登出'),
                   ),
@@ -396,7 +397,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('資料更新成功'),
-          backgroundColor: Colors.green,
+          backgroundColor: Color.fromARGB(255, 154, 179, 130),
         ),
       );
     }

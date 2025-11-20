@@ -38,13 +38,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       backgroundColor: const Color(0xFFF8F9FA), // 淺灰色背景
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFE8F4F8), // 淺藍色標題欄
-        foregroundColor: const Color(0xFF2C3E50), // 深灰藍色文字
+        backgroundColor: const Color(0xFFCCD5AE), // 米綠色標題欄（與首頁一致）
+        foregroundColor: const Color(0xFFFEFAE0), // 米白色文字
         title: Text(
           widget.recipe.name,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Color(0xFF2C3E50),
+            color: Color(0xFFFEFAE0),
           ),
         ),
         actions: [
@@ -124,7 +124,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF2C3E50),
+                  color: Color(0xFF32201C),
                 ),
               ),
               const SizedBox(height: 20),
@@ -138,17 +138,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE2ECF2),
+                        color: const Color(0xFFF5F5DC), // 米色
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFFE2ECF2).withOpacity(0.5),
+                          color: const Color(0xFFD4A373).withOpacity(0.3), // 咖啡色邊框
                         ),
                       ),
                       child: Text(
                         tag.trim(),
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF2C3E50),
+                          color: Color(0xFF32201C),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -178,9 +178,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isTimePortionExpanded
-                            ? const Color(0xFFE8F4F8)
+                            ? const Color(0xFFF5F5DC) // 米色
                             : Colors.white,
-                        foregroundColor: const Color(0xFF2C3E50),
+                        foregroundColor: const Color(0xFF32201C),
                         elevation: _isTimePortionExpanded ? 2 : 0,
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         minimumSize: const Size(0, 40),
@@ -188,7 +188,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: _isTimePortionExpanded
-                                ? const Color(0xFFE8F4F8)
+                                ? const Color(0xFFD4A373) // 咖啡色邊框
                                 : const Color(0xFFE0E0E0).withOpacity(0.5),
                           ),
                         ),
@@ -213,9 +213,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isIngredientsExpanded
-                            ? const Color(0xFFE8F4F8)
+                            ? const Color(0xFFF5F5DC) // 米色
                             : Colors.white,
-                        foregroundColor: const Color(0xFF2C3E50),
+                        foregroundColor: const Color(0xFF32201C),
                         elevation: _isIngredientsExpanded ? 2 : 0,
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         minimumSize: const Size(0, 40),
@@ -223,7 +223,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: _isIngredientsExpanded
-                                ? const Color(0xFFE8F4F8)
+                                ? const Color(0xFFD4A373) // 咖啡色邊框
                                 : const Color(0xFFE0E0E0).withOpacity(0.5),
                           ),
                         ),
@@ -248,9 +248,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isStepsExpanded
-                            ? const Color(0xFFE8F4F8)
+                            ? const Color(0xFFF5F5DC) // 米色
                             : Colors.white,
-                        foregroundColor: const Color(0xFF2C3E50),
+                        foregroundColor: const Color(0xFF32201C),
                         elevation: _isStepsExpanded ? 2 : 0,
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                         minimumSize: const Size(0, 40),
@@ -258,7 +258,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
                             color: _isStepsExpanded
-                                ? const Color(0xFFE8F4F8)
+                                ? const Color(0xFFD4A373) // 咖啡色邊框
                                 : const Color(0xFFE0E0E0).withOpacity(0.5),
                           ),
                         ),
@@ -296,10 +296,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                              color: const Color(0xFFF5F5DC).withOpacity(0.5), // 米色
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.access_time, size: 20, color: Color(0xFF8C9BA6)),
+                            child: const Icon(Icons.access_time, size: 20, color: Color(0xFFD4A373)), // 咖啡色
                           ),
                           const SizedBox(width: 12),
                           Text(
@@ -316,10 +316,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8F4F8).withOpacity(0.5),
+                              color: const Color(0xFFF5F5DC).withOpacity(0.5), // 米色
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.restaurant, size: 20, color: Color(0xFF8C9BA6)),
+                            child: const Icon(Icons.restaurant, size: 20, color: Color(0xFFD4A373)), // 咖啡色
                           ),
                           const SizedBox(width: 12),
                           Text(
@@ -380,11 +380,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               ),
                               const SizedBox(width: 10),
                               const Text(
-                                '食材',
+                                '食材清單',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2C3E50),
+                                  color: Color(0xFF32201C),
                                 ),
                               ),
                             ],
@@ -467,9 +467,9 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                               const Text(
                                 '烹飪步驟',
                                 style: TextStyle(
-                                  fontSize: 20,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2C3E50),
+                                  color: Color(0xFF32201C),
                                 ),
                               ),
                             ],
@@ -550,7 +550,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFB0BEC5), // 與上一步按鈕相同的顏色
+                        backgroundColor: const Color(0xFFD4A373), // 咖啡色
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
