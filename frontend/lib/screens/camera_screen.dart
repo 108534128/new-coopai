@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-// 條件導入：Web 平台使用 stub，其他平台使用真實實現
-import '../services/food_detection_service_stub.dart'
-    if (dart.library.io) '../services/food_detection_service.dart';
+import '../services/api_service.dart';
+import 'recipe_search_result_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -17,40 +16,28 @@ class CameraScreen extends StatefulWidget {
 
 class _CameraScreenState extends State<CameraScreen> {
   final ImagePicker _picker = ImagePicker();
-  final FoodDetectionService _detectionService = FoodDetectionService();
+  final ApiService _apiService = ApiService();
   
   File? _selectedImage;
   bool _isProcessing = false;
-  Map<String, int>? _detectionResult;
-  String? _resultMessage;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _initializeService();
   }
 
-  Future<void> _initializeService() async {
-    try {
-      await _detectionService.initialize();
-      print('✅ 食材辨識服務初始化成功');
-    } catch (e) {
-      print('❌ 食材辨識服務初始化失敗: $e');
-      if (mounted) {
-        setState(() {
-          _error = '模型載入失敗：$e';
-        });
-      }
-    }
+  // 測試版本：模擬食材辨識（預設辨識到胡蘿蔔 2 個）
+  Map<String, int> _mockDetectIngredients() {
+    // 未來這裡會替換成真實的 AI 辨識結果
+    // 目前預設回傳胡蘿蔔 2 個
+    return {'胡蘿蔔': 2};
   }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
       setState(() {
         _error = null;
-        _detectionResult = null;
-        _resultMessage = null;
       });
 
       final XFile? pickedFile = await _picker.pickImage(
@@ -65,7 +52,7 @@ class _CameraScreenState extends State<CameraScreen> {
           _selectedImage = File(pickedFile.path);
         });
         
-        await _processImage(pickedFile.path);
+        await _processImage();
       }
     } catch (e) {
       print('❌ 選擇圖片錯誤: $e');
@@ -75,29 +62,22 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  Future<void> _processImage(String imagePath) async {
+  Future<void> _processImage() async {
     setState(() {
       _isProcessing = true;
       _error = null;
     });
 
     try {
-      final result = await _detectionService.detectFood(imagePath);
+      // 測試版本：模擬辨識結果（預設辨識到胡蘿蔔）
+      // 未來這裡會替換成真實的 AI 辨識
+      final detectedIngredients = _mockDetectIngredients();
       
-      if (result.isEmpty) {
-        setState(() {
-          _resultMessage = '未辨識到任何食材，請重新拍攝';
-          _detectionResult = null;
-        });
-      } else {
-        // 生成結果訊息
-        final message = _generateResultMessage(result);
-        
-        setState(() {
-          _detectionResult = result;
-          _resultMessage = message;
-        });
-      }
+      print('🔍 偵測到的食材: $detectedIngredients');
+      
+      // 根據偵測到的食材搜尋食譜
+      await _searchRecipesByIngredients(detectedIngredients);
+      
     } catch (e) {
       print('❌ 處理圖片錯誤: $e');
       setState(() {
@@ -110,21 +90,39 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
-  String _generateResultMessage(Map<String, int> result) {
-    if (result.isEmpty) {
-      return '未辨識到任何食材';
-    }
-
-    final List<String> items = [];
-    result.forEach((ingredient, count) {
-      if (count > 1) {
-        items.add('$count 個 $ingredient');
-      } else {
-        items.add('$ingredient');
+  // 根據食材搜尋食譜
+  Future<void> _searchRecipesByIngredients(Map<String, int> ingredientsWithCount) async {
+    try {
+      // 提取食材名稱列表用於搜尋
+      final ingredients = ingredientsWithCount.keys.toList();
+      
+      // 使用 API 搜尋包含所有偵測到食材的食譜
+      final recipes = await _apiService.searchRecipes(
+        searchText: null,
+        tags: ingredients, // 將食材作為標籤搜尋
+      );
+      
+      print('✅ 找到 ${recipes.length} 個包含食材的食譜');
+      
+      // 導航到結果頁面
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RecipeSearchResultScreen(
+              detectedIngredients: ingredientsWithCount,
+              recipes: recipes,
+            ),
+          ),
+        );
       }
-    });
-
-    return '辨識到：${items.join(', ')}';
+      
+    } catch (e) {
+      print('❌ 搜尋食譜錯誤: $e');
+      setState(() {
+        _error = '搜尋食譜失敗：$e';
+      });
+    }
   }
 
   @override
@@ -363,97 +361,6 @@ class _CameraScreenState extends State<CameraScreen> {
                         ),
                       ),
 
-                    // 辨識結果
-                    if (_resultMessage != null && !_isProcessing)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.green[200]!),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle,
-                                  color: Colors.green[700],
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  '辨識結果',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _resultMessage!,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                height: 1.5,
-                              ),
-                            ),
-                            if (_detectionResult != null &&
-                                _detectionResult!.isNotEmpty) ...[
-                              const SizedBox(height: 16),
-                              const Divider(),
-                              const SizedBox(height: 12),
-                              const Text(
-                                '詳細清單：',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ..._detectionResult!.entries.map(
-                                (entry) => Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        entry.key,
-                                        style: const TextStyle(fontSize: 15),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFD4A373)
-                                              .withOpacity(0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          '${entry.value} 個',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFFD4A373),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
                     const SizedBox(height: 24),
 
                     // 操作按鈕
@@ -515,7 +422,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue[50],
+                        color: Color(0xFFF5F5DC),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -525,7 +432,7 @@ class _CameraScreenState extends State<CameraScreen> {
                             children: [
                               Icon(
                                 Icons.info_outline,
-                                color: Colors.blue[700],
+                                color: const Color(0xFF32201C),
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
@@ -534,7 +441,7 @@ class _CameraScreenState extends State<CameraScreen> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
+                                  color: const Color(0xFF32201C),
                                 ),
                               ),
                             ],
@@ -587,7 +494,6 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void dispose() {
-    _detectionService.dispose();
     super.dispose();
   }
 }

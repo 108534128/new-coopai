@@ -295,7 +295,7 @@ class ApiService {
     String? searchText,
     List<String>? tags,
     int page = 1,
-    int perPage = 200,
+    int perPage = 100,
   }) async {
     try {
       print('🔍 正在搜尋食譜...');
