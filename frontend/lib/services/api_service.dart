@@ -348,10 +348,43 @@ class ApiService {
           throw Exception('Invalid response format: missing recipes key');
         }
         
-        final List<dynamic> recipesJson = data['recipes'];
-        print('📊 Found ${recipesJson.length} recipes');
+        // 檢查總數和頁數信息
+        final total = data['total'] as int? ?? 0;
+        final pages = data['pages'] as int? ?? 1;
+        final currentPage = data['current_page'] as int? ?? 1;
         
-        final recipes = recipesJson.map((json) {
+        print('📊 分頁信息: 總數=$total, 頁數=$pages, 當前頁=$currentPage');
+        
+        final List<dynamic> recipesJson = data['recipes'];
+        print('📊 當前頁找到 ${recipesJson.length} 個食譜');
+        
+        // 如果有多頁，加載所有頁面的食譜
+        List<dynamic> allRecipesJson = List.from(recipesJson);
+        if (pages > 1 && currentPage == 1) {
+          print('📄 檢測到多頁結果（共 $pages 頁），開始加載所有頁面...');
+          for (int p = 2; p <= pages; p++) {
+            try {
+              String nextUrlString = urlString.replaceFirst('page=$page', 'page=$p');
+              final nextUri = Uri.parse(nextUrlString);
+              final nextResponse = await http.get(nextUri, headers: headers);
+              
+              if (nextResponse.statusCode == 200) {
+                final nextData = json.decode(nextResponse.body);
+                final nextRecipesJson = nextData['recipes'] as List<dynamic>? ?? [];
+                allRecipesJson.addAll(nextRecipesJson);
+                print('📄 第 $p 頁加載了 ${nextRecipesJson.length} 個食譜');
+              } else {
+                print('⚠️ 第 $p 頁加載失敗: ${nextResponse.statusCode}');
+              }
+            } catch (e) {
+              print('⚠️ 加載第 $p 頁時發生錯誤: $e');
+              break; // 如果某一頁加載失敗，停止加載後續頁面
+            }
+          }
+          print('📊 總共加載了 ${allRecipesJson.length} 個食譜（總數: $total）');
+        }
+        
+        final recipes = allRecipesJson.map((json) {
           try {
             return Recipe.fromJson(json);
           } catch (e) {
