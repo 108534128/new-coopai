@@ -21,7 +21,7 @@ class ApiService {
     ];
     
     // 添加常見的私有網路 IP
-    const commonIPs = [1, 100, 101, 150, 200];
+    const commonIPs = [1, 100, 101, 150, 200, 196];
     for (final ip in commonIPs) {
       hosts.addAll([
         '192.168.0.$ip:5000',
@@ -29,14 +29,28 @@ class ApiService {
       ]);
     }
     
+    // 如果有設定 ngrok 地址，優先使用
+    // 可以通過環境變數或 SharedPreferences 設定
+    // 格式範例: "abc123.ngrok-free.app" 或 "0.tcp.jp.ngrok.io:12345"
+    
     return hosts;
   }
 
   static String get baseUrl {
     if (_cachedBaseUrl != null) return _cachedBaseUrl!;
     
+    // 優先使用環境變數（支援 ngrok 地址）
     if (_envApiHost.isNotEmpty) {
-      return _envApiHost.replaceAll(RegExp(r'\/+\$'), '') + '/api';
+      String host = _envApiHost.replaceAll(RegExp(r'\/+$'), ''); // 移除末尾斜線
+      // 如果已經包含協議，直接使用；否則添加 http://
+      if (!host.startsWith('http://') && !host.startsWith('https://')) {
+        host = 'https://$host'; // ngrok 使用 HTTPS
+      }
+      // 確保有 /api 路徑
+      if (!host.endsWith('/api')) {
+        host = '$host/api';
+      }
+      return host;
     }
     
     if (kIsWeb) {

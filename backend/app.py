@@ -11,12 +11,17 @@ from urllib.request import Request, urlopen
 import os
 import uuid
 from werkzeug.exceptions import BadRequest
+import json
+import numpy as np
+from PIL import Image
+import onnxruntime as ort
+from io import BytesIO
 
 app = Flask(__name__)
 
 # 資料庫配置（優先使用環境變數，否則使用預設值）
 import os
-database_url = os.environ.get('DATABASE_URL') or 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:14672/cookpal'
+database_url = os.environ.get('DATABASE_URL') or 'mysql+pymysql://123:456@0.tcp.jp.ngrok.io:12716/cookpal'
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # 資料庫連接池配置，防止連接中斷
@@ -47,6 +52,206 @@ CORS(app, resources={
         "allow_headers": ["Content-Type", "Authorization"]
     }
 })
+
+# ==================== 食材辨識模型載入 ====================
+
+class IngredientRecognizer:
+    """食材辨識模型類"""
+    def __init__(self):
+        self.session = None
+        self.classes = []
+        self.chinese_map = {}
+        self.label_fixes = {}
+        self.model_path = None
+        self._load_model()
+    
+    def _load_model(self):
+        """載入模型和相關資料"""
+        try:
+            # 模型檔案路徑
+            model_dir = os.path.join(os.path.dirname(__file__), 'models')
+            self.model_path = os.path.join(model_dir, 'best.onnx')
+            
+            # 檢查模型檔案是否存在
+            if not os.path.exists(self.model_path):
+                print(f"⚠️ 警告：模型檔案不存在於 {self.model_path}")
+                return
+            
+            # 載入 ONNX 模型
+            print(f"📦 正在載入模型：{self.model_path}")
+            self.session = ort.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
+            print("✅ 模型載入成功")
+            
+            # 載入類別清單
+            classes_path = os.path.join(model_dir, 'classes.json')
+            if os.path.exists(classes_path):
+                with open(classes_path, 'r', encoding='utf-8') as f:
+                    self.classes = json.load(f)
+                print(f"✅ 載入 {len(self.classes)} 個類別")
+            
+            # 載入中英文對應表
+            chinese_map_path = os.path.join(model_dir, 'chinese_map.json')
+            if os.path.exists(chinese_map_path):
+                with open(chinese_map_path, 'r', encoding='utf-8') as f:
+                    self.chinese_map = json.load(f)
+                print(f"✅ 載入中英文對應表")
+            
+            # 載入標籤修正表
+            label_fixes_path = os.path.join(model_dir, 'label_fixes.json')
+            if os.path.exists(label_fixes_path):
+                with open(label_fixes_path, 'r', encoding='utf-8') as f:
+                    self.label_fixes = json.load(f)
+                print(f"✅ 載入標籤修正表")
+                
+        except Exception as e:
+            print(f"❌ 載入模型失敗：{str(e)}")
+            import traceback
+            traceback.print_exc()
+    
+    def preprocess_image(self, image):
+        """預處理圖片為模型輸入格式"""
+        # 調整大小為 640x640
+        image = image.resize((640, 640), Image.Resampling.LANCZOS)
+        
+        # 轉換為 RGB（確保是 RGB 格式）
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        
+        # 轉換為 numpy array 並正規化到 0-1
+        img_array = np.array(image, dtype=np.float32) / 255.0
+        
+        # 轉換為 CHW 格式 (Channel, Height, Width)
+        img_array = img_array.transpose(2, 0, 1)  # HWC -> CHW
+        
+        # 添加批次維度 [1, 3, 640, 640]
+        img_array = np.expand_dims(img_array, axis=0)
+        
+        return img_array
+    
+    def recognize(self, image_file):
+        """辨識圖片中的食材"""
+        if self.session is None:
+            raise Exception("模型尚未載入，請檢查模型檔案是否存在")
+        
+        try:
+            # 讀取圖片
+            image = Image.open(BytesIO(image_file.read()))
+            
+            # 預處理圖片
+            input_data = self.preprocess_image(image)
+            
+            # 獲取模型輸入名稱
+            input_name = self.session.get_inputs()[0].name
+            
+            # 執行推理
+            outputs = self.session.run(None, {input_name: input_data})
+            
+            # 處理輸出結果
+            # YOLO 模型輸出格式可能有多種：
+            # 1. [batch, num_detections, 6] - [x, y, w, h, confidence, class_id]
+            # 2. [batch, num_detections, 85] - YOLOv5/v8 格式
+            # 3. 多個輸出張量
+            
+            detections = []
+            if len(outputs) > 0:
+                output = outputs[0]  # 取第一個輸出
+                
+                # 移除批次維度
+                if len(output.shape) == 3:
+                    output = output[0]  # [batch, num_detections, features] -> [num_detections, features]
+                elif len(output.shape) == 2:
+                    output = output  # 已經是 [num_detections, features]
+                else:
+                    # 如果是其他格式，嘗試展平
+                    output = output.reshape(-1, output.shape[-1])
+                
+                # 解析每個檢測結果
+                for detection in output:
+                    if len(detection) < 5:
+                        continue
+                    
+                    # 嘗試不同的輸出格式
+                    # 格式1: [x, y, w, h, confidence, class_id, ...]
+                    # 格式2: [x, y, w, h, confidence, class_scores...] (YOLOv5/v8)
+                    
+                    x, y, w, h = float(detection[0]), float(detection[1]), float(detection[2]), float(detection[3])
+                    confidence = float(detection[4])
+                    
+                    # 計算邊界框座標
+                    x1 = x - w / 2
+                    y1 = y - h / 2
+                    x2 = x + w / 2
+                    y2 = y + h / 2
+                    
+                    # 判斷類別 ID
+                    class_id = None
+                    if len(detection) >= 6:
+                        # 如果第6個元素是類別 ID（整數或接近整數）
+                        if len(detection) == 6:
+                            class_id = int(round(detection[5]))
+                        else:
+                            # YOLOv5/v8 格式：第5個之後是類別分數
+                            # 找到最高分數的類別
+                            class_scores = detection[5:]
+                            class_id = int(np.argmax(class_scores))
+                            # 使用類別分數作為信心度（可選）
+                            # confidence = float(class_scores[class_id])
+                    
+                    # 只保留信心度大於 0.25 的結果（降低閾值以獲得更多結果）
+                    if confidence > 0.25 and class_id is not None:
+                        if 0 <= class_id < len(self.classes):
+                            detections.append({
+                                'class_id': class_id,
+                                'confidence': confidence,
+                                'bbox': [x1, y1, x2, y2]
+                            })
+            
+            # 應用標籤修正和轉換為中文
+            fixed_detections = []
+            for det in detections:
+                raw_name = self.classes[det['class_id']]
+                # 應用標籤修正
+                fixed_name = self.label_fixes.get(raw_name, raw_name)
+                # 轉換為中文
+                chinese_name = self.chinese_map.get(fixed_name, fixed_name)
+                
+                fixed_detections.append({
+                    'raw_name': raw_name,
+                    'fixed_name': fixed_name,
+                    'chinese_name': chinese_name,
+                    'confidence': det['confidence'],
+                    'bbox': det['bbox']
+                })
+            
+            # 統計每種食材的數量
+            counts = {}
+            for det in fixed_detections:
+                name = det['chinese_name']
+                counts[name] = counts.get(name, 0) + 1
+            
+            # 生成訊息
+            if counts:
+                message_parts = [f"{count} 個 {name}" for name, count in counts.items()]
+                message = "有 " + ", ".join(message_parts)
+            else:
+                message = "未檢測到食材"
+            
+            return {
+                'status': 'success',
+                'message': message,
+                'count': len(fixed_detections),
+                'ingredients': counts,
+                'detections': fixed_detections
+            }
+            
+        except Exception as e:
+            import traceback
+            error_msg = str(e)
+            traceback.print_exc()
+            raise Exception(f"辨識失敗：{error_msg}")
+
+# 初始化辨識器（全域單例）
+recognizer = IngredientRecognizer()
 
 # 用戶模型
 class User(db.Model):
@@ -1165,6 +1370,76 @@ def like_recipe(recipe_id):
         db.session.rollback()
         return jsonify({
             'error': '操作失敗',
+            'message': str(e)
+        }), 500
+
+# ==================== 食材辨識 API ====================
+
+@app.route('/api/recognize-ingredients', methods=['POST'])
+@jwt_required()
+def recognize_ingredients():
+    """食材辨識 API - 上傳圖片並辨識食材"""
+    try:
+        # 檢查是否有上傳檔案
+        if 'image' not in request.files:
+            return jsonify({
+                'error': '缺少圖片檔案',
+                'message': '請上傳圖片檔案（欄位名稱：image）'
+            }), 400
+        
+        image_file = request.files['image']
+        
+        # 檢查檔案是否為空
+        if image_file.filename == '':
+            return jsonify({
+                'error': '檔案為空',
+                'message': '請選擇有效的圖片檔案'
+            }), 400
+        
+        # 檢查檔案類型
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+        file_ext = image_file.filename.rsplit('.', 1)[1].lower() if '.' in image_file.filename else ''
+        
+        if file_ext not in allowed_extensions:
+            return jsonify({
+                'error': '不支援的檔案格式',
+                'message': f'支援的格式：{", ".join(allowed_extensions)}'
+            }), 400
+        
+        # 執行辨識
+        result = recognizer.recognize(image_file)
+        
+        return jsonify(result), 200
+        
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        print(f"❌ 辨識錯誤：{error_msg}")
+        traceback.print_exc()
+        return jsonify({
+            'error': '辨識失敗',
+            'message': error_msg
+        }), 500
+
+@app.route('/api/recognize-ingredients/status', methods=['GET'])
+def recognize_status():
+    """檢查辨識模型狀態"""
+    try:
+        is_loaded = recognizer.session is not None
+        model_path = recognizer.model_path
+        
+        return jsonify({
+            'status': 'success',
+            'model_loaded': is_loaded,
+            'model_path': model_path if model_path else None,
+            'classes_count': len(recognizer.classes),
+            'chinese_map_count': len(recognizer.chinese_map),
+            'label_fixes_count': len(recognizer.label_fixes)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': '檢查狀態失敗',
             'message': str(e)
         }), 500
 

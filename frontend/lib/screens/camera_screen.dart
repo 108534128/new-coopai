@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/api_service.dart';
+import '../services/food_detection_service.dart';
 import 'recipe_search_result_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -17,21 +18,35 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   final ImagePicker _picker = ImagePicker();
   final ApiService _apiService = ApiService();
+  final FoodDetectionService _detectionService = FoodDetectionService();
   
   File? _selectedImage;
   bool _isProcessing = false;
+  bool _isServiceInitialized = false;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _initializeDetectionService();
   }
 
-  // 測試版本：模擬食材辨識（預設辨識到胡蘿蔔 2 個）
-  Map<String, int> _mockDetectIngredients() {
-    // 未來這裡會替換成真實的 AI 辨識結果
-    // 目前預設回傳胡蘿蔔 2 個
-    return {'胡蘿蔔': 2};
+  /// 初始化辨識服務
+  Future<void> _initializeDetectionService() async {
+    try {
+      print('🚀 開始初始化食材辨識服務...');
+      await _detectionService.initialize();
+      setState(() {
+        _isServiceInitialized = true;
+      });
+      print('✅ 食材辨識服務初始化完成');
+    } catch (e) {
+      print('❌ 初始化食材辨識服務失敗: $e');
+      setState(() {
+        _error = '辨識服務初始化失敗，請重新啟動 APP';
+        _isServiceInitialized = false;
+      });
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -63,17 +78,43 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Future<void> _processImage() async {
+    if (!_isServiceInitialized) {
+      setState(() {
+        _error = '辨識服務尚未初始化，請稍候...';
+      });
+      // 嘗試重新初始化
+      await _initializeDetectionService();
+      if (!_isServiceInitialized) {
+        return;
+      }
+    }
+
+    if (_selectedImage == null) {
+      setState(() {
+        _error = '請先選擇圖片';
+      });
+      return;
+    }
+
     setState(() {
       _isProcessing = true;
       _error = null;
     });
 
     try {
-      // 測試版本：模擬辨識結果（預設辨識到胡蘿蔔）
-      // 未來這裡會替換成真實的 AI 辨識
-      final detectedIngredients = _mockDetectIngredients();
+      print('🔍 開始辨識圖片: ${_selectedImage!.path}');
       
-      print('🔍 偵測到的食材: $detectedIngredients');
+      // 使用真實的 AI 辨識服務
+      final detectedIngredients = await _detectionService.detectFood(_selectedImage!.path);
+      
+      print('✅ 偵測到的食材: $detectedIngredients');
+      
+      if (detectedIngredients.isEmpty) {
+        setState(() {
+          _error = '未偵測到食材，請確保圖片清晰且包含可辨識的食材';
+        });
+        return;
+      }
       
       // 根據偵測到的食材搜尋食譜
       await _searchRecipesByIngredients(detectedIngredients);
@@ -494,6 +535,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   void dispose() {
+    _detectionService.dispose();
     super.dispose();
   }
 }
