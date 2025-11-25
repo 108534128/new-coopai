@@ -15,8 +15,46 @@ class RecipeSearchResultScreen extends StatelessWidget {
     required this.recipes,
   });
 
+  /// 計算食譜包含多少個辨識出的食材
+  int _countMatchingIngredients(Recipe recipe) {
+    final recipeTags = recipe.tagsList;
+    final detectedTags = detectedIngredients.keys.toSet();
+    
+    // 計算食譜標籤中包含多少個辨識出的食材
+    int matchCount = 0;
+    for (final tag in recipeTags) {
+      if (detectedTags.contains(tag)) {
+        matchCount++;
+      }
+    }
+    
+    return matchCount;
+  }
+
+  /// 對食譜進行排序：優先顯示包含最多辨識食材的食譜
+  List<Recipe> _sortRecipesByIngredientMatch(List<Recipe> recipes) {
+    final sorted = List<Recipe>.from(recipes);
+    sorted.sort((a, b) {
+      final countA = _countMatchingIngredients(a);
+      final countB = _countMatchingIngredients(b);
+      
+      // 按包含的食材數量從多到少排序
+      if (countA != countB) {
+        return countB.compareTo(countA);
+      }
+      
+      // 如果數量相同，可以按其他條件排序（如喜歡數、烹飪時間等）
+      // 這裡先按喜歡數排序
+      return (b.likes ?? 0).compareTo(a.likes ?? 0);
+    });
+    
+    return sorted;
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 對食譜進行排序：優先顯示包含最多辨識食材的食譜
+    final sortedRecipes = _sortRecipesByIngredientMatch(recipes);
     return Scaffold(
       backgroundColor: const Color(0xFFFFFFFF),
       appBar: AppBar(
@@ -98,7 +136,7 @@ class RecipeSearchResultScreen extends StatelessWidget {
 
           // 食譜列表
           Expanded(
-            child: recipes.isEmpty
+            child: sortedRecipes.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -131,9 +169,9 @@ class RecipeSearchResultScreen extends StatelessWidget {
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                           ),
-                          itemCount: recipes.length,
+                          itemCount: sortedRecipes.length,
                           itemBuilder: (context, index) {
-                            final recipe = recipes[index];
+                            final recipe = sortedRecipes[index];
                             return RecipeCard(
                               recipe: recipe,
                               onTap: () {
