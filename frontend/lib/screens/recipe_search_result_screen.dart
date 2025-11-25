@@ -122,22 +122,6 @@ class RecipeSearchResultScreen extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 8),
-                            Text(
-                              '找到 ${recipes.length} 個食譜',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF32201C),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       Expanded(
                         child: GridView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
